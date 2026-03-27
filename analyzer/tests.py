@@ -6,6 +6,7 @@ import anthropic
 from django.test import TestCase
 
 from analyzer.claude import ClaudeService, ClaudeServiceError, _MODEL
+from analyzer.pdf import PdfExtractionError
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ class ExtractTextFromPdfTests(TestCase):
 
         self.assertEqual(result, "Real content")
 
-    def test_returns_empty_string_for_empty_pdf(self):
+    def test_raises_on_empty_pdf(self):
         mock_pdf = MagicMock()
         mock_pdf.pages = []
         mock_pdf.__enter__ = lambda s: s
@@ -67,9 +68,18 @@ class ExtractTextFromPdfTests(TestCase):
 
         with patch("analyzer.pdf.pdfplumber.open", return_value=mock_pdf):
             from analyzer.pdf import extract_text_from_pdf
-            result = extract_text_from_pdf(io.BytesIO(b"fake pdf"))
+            with self.assertRaises(PdfExtractionError) as ctx:
+                extract_text_from_pdf(io.BytesIO(b"fake pdf"))
 
-        self.assertEqual(result, "")
+        self.assertIn("scanned", str(ctx.exception))
+
+    def test_raises_on_unreadable_pdf(self):
+        with patch("analyzer.pdf.pdfplumber.open", side_effect=Exception("corrupt")):
+            from analyzer.pdf import extract_text_from_pdf
+            with self.assertRaises(PdfExtractionError) as ctx:
+                extract_text_from_pdf(io.BytesIO(b"bad pdf"))
+
+        self.assertIn("Could not read", str(ctx.exception))
 
 
 # ── ClaudeService ─────────────────────────────────────────────────────────────
@@ -242,6 +252,21 @@ class AnalyzeViewTests(TestCase):
         response = self._post({"resume_text": "my resume", "jd_text": "some job"}, service=fake)
         self.assertEqual(response.status_code, 503)
         self.assertIn(b"internet connection", response.content)
+
+    def test_unreadable_pdf_returns_400(self):
+        fake_pdf = io.BytesIO(b"bad pdf")
+        fake_pdf.name = "resume.pdf"
+
+        with patch("analyzer.views.extract_text_from_pdf",
+                   side_effect=PdfExtractionError("Could not read the PDF file: corrupt")), \
+             patch("analyzer.views.get_service", return_value=FakeClaudeService()):
+            response = self.client.post("/analyze/", {
+                "resume_pdf": fake_pdf,
+                "jd_text": "some job",
+            })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"Could not read", response.content)
 
     def test_pdf_upload_takes_priority_over_text(self):
         fake_pdf = io.BytesIO(b"fake pdf content")

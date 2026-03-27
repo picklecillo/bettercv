@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 
 from .claude import ClaudeServiceError, get_service
-from .pdf import extract_text_from_pdf
+from .pdf import PdfExtractionError, extract_text_from_pdf
 
 
 def index(request):
@@ -15,12 +15,14 @@ def analyze(request):
     jd_text = request.POST.get("jd_text", "").strip()
 
     if request.FILES.get("resume_pdf"):
-        resume_text = extract_text_from_pdf(request.FILES["resume_pdf"])
+        try:
+            resume_text = extract_text_from_pdf(request.FILES["resume_pdf"])
+        except PdfExtractionError as e:
+            return HttpResponse(str(e), status=400)
     else:
         resume_text = request.POST.get("resume_text", "").strip()
-
-    if not resume_text:
-        return HttpResponse("Please provide a resume (text or PDF).", status=400)
+        if not resume_text:
+            return HttpResponse("Please provide a resume (text or PDF).", status=400)
     if not jd_text:
         return HttpResponse("Please provide a job description.", status=400)
 
