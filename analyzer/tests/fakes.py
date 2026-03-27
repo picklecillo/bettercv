@@ -15,4 +15,4 @@ class FakeClaudeService(ClaudeService):
         return self._response
 
     def stream(self, resume_text: str, jd_text: str) -> Iterator[str]:
-        yield from self._response
+        yield self._response

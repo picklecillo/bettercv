@@ -226,6 +226,35 @@
       background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 100%);
     }
 
+    /* ── Streaming ── */
+    .stream-status {
+      padding: 1.5rem 2.25rem 0;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .dots {
+      display: inline-block;
+      animation: blink 1.2s step-start infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    #stream-output {
+      padding: 1rem 2.25rem 2rem;
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     /* ── Result content (rendered markdown) ── */
     #result {
       padding: 2rem 2.25rem;
