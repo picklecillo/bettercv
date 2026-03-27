@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import anthropic
 from django.test import TestCase
 
-from analyzer.claude import ClaudeService, _MODEL
+from analyzer.claude import ClaudeService, ClaudeServiceError, _MODEL
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -122,6 +122,49 @@ class ClaudeServiceTests(TestCase):
         result = "".join(service.stream("my resume", "some job"))
         self.assertEqual(result, "## ATS Score\n75/100")
 
+    def test_analyze_raises_service_error_on_credit_exhaustion(self):
+        sdk_error = anthropic.BadRequestError(
+            message="Your credit balance is too low to access the Anthropic API.",
+            response=MagicMock(status_code=400),
+            body={"error": {"type": "invalid_request_error"}},
+        )
+        fake_client = MagicMock(spec=anthropic.Anthropic)
+        fake_client.messages.create.side_effect = sdk_error
+        service = ClaudeService(fake_client)
+
+        with self.assertRaises(ClaudeServiceError) as ctx:
+            service.analyze("resume", "jd")
+
+        self.assertEqual(ctx.exception.status, 402)
+        self.assertIn("console.anthropic.com", ctx.exception.message)
+
+    def test_analyze_raises_service_error_on_rate_limit(self):
+        sdk_error = anthropic.RateLimitError(
+            message="Rate limited",
+            response=MagicMock(status_code=429),
+            body={"error": {"type": "rate_limit_error"}},
+        )
+        fake_client = MagicMock(spec=anthropic.Anthropic)
+        fake_client.messages.create.side_effect = sdk_error
+        service = ClaudeService(fake_client)
+
+        with self.assertRaises(ClaudeServiceError) as ctx:
+            service.analyze("resume", "jd")
+
+        self.assertEqual(ctx.exception.status, 502)
+        self.assertIn("Rate limit", ctx.exception.message)
+
+    def test_analyze_raises_service_error_on_connection_failure(self):
+        fake_client = MagicMock(spec=anthropic.Anthropic)
+        fake_client.messages.create.side_effect = anthropic.APIConnectionError(request=MagicMock())
+        service = ClaudeService(fake_client)
+
+        with self.assertRaises(ClaudeServiceError) as ctx:
+            service.analyze("resume", "jd")
+
+        self.assertEqual(ctx.exception.status, 503)
+        self.assertIn("internet connection", ctx.exception.message)
+
 
 # ── views.py ──────────────────────────────────────────────────────────────────
 
@@ -174,32 +217,28 @@ class AnalyzeViewTests(TestCase):
         self.assertEqual(fake.analyze_calls[0]["jd_text"], "some job")
 
     def test_credit_error_returns_402(self):
-        error = anthropic.BadRequestError(
-            message="Your credit balance is too low to access the Anthropic API.",
-            response=MagicMock(status_code=400),
-            body={"error": {"type": "invalid_request_error"}},
-        )
         fake = FakeClaudeService()
-        fake.analyze = MagicMock(side_effect=error)
+        fake.analyze = MagicMock(side_effect=ClaudeServiceError(
+            "Your Anthropic credit balance is too low. Please add credits at console.anthropic.com.", 402
+        ))
         response = self._post({"resume_text": "my resume", "jd_text": "some job"}, service=fake)
         self.assertEqual(response.status_code, 402)
         self.assertIn(b"console.anthropic.com", response.content)
 
     def test_rate_limit_error_returns_502(self):
-        error = anthropic.RateLimitError(
-            message="Rate limited",
-            response=MagicMock(status_code=429),
-            body={"error": {"type": "rate_limit_error"}},
-        )
         fake = FakeClaudeService()
-        fake.analyze = MagicMock(side_effect=error)
+        fake.analyze = MagicMock(side_effect=ClaudeServiceError(
+            "Rate limit hit. Please wait a moment and try again.", 502
+        ))
         response = self._post({"resume_text": "my resume", "jd_text": "some job"}, service=fake)
         self.assertEqual(response.status_code, 502)
         self.assertIn(b"Rate limit", response.content)
 
     def test_connection_error_returns_503(self):
         fake = FakeClaudeService()
-        fake.analyze = MagicMock(side_effect=anthropic.APIConnectionError(request=MagicMock()))
+        fake.analyze = MagicMock(side_effect=ClaudeServiceError(
+            "Could not reach the Claude API. Check your internet connection.", 503
+        ))
         response = self._post({"resume_text": "my resume", "jd_text": "some job"}, service=fake)
         self.assertEqual(response.status_code, 503)
         self.assertIn(b"internet connection", response.content)
