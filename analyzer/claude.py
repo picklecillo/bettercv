@@ -1,4 +1,5 @@
 import anthropic
+from collections.abc import Iterator
 from django.conf import settings
 
 SYSTEM_PROMPT = """You are an expert ATS (Applicant Tracking System) analyst and resume coach.
@@ -28,16 +29,38 @@ Here is the job description:
 
 Please provide a detailed ATS analysis."""
 
+_MODEL = "claude-sonnet-4-20250514"
+_MAX_TOKENS = 2000
 
-def get_ats_analysis(resume_text, jd_text):
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": USER_PROMPT.format(
-            resume_text=resume_text,
-            jd_text=jd_text,
-        )}],
-    )
-    return message.content[0].text
+
+class ClaudeService:
+    def __init__(self, client: anthropic.Anthropic) -> None:
+        self._client = client
+
+    def analyze(self, resume_text: str, jd_text: str) -> str:
+        message = self._client.messages.create(
+            model=_MODEL,
+            max_tokens=_MAX_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": USER_PROMPT.format(
+                resume_text=resume_text,
+                jd_text=jd_text,
+            )}],
+        )
+        return message.content[0].text
+
+    def stream(self, resume_text: str, jd_text: str) -> Iterator[str]:
+        with self._client.messages.stream(
+            model=_MODEL,
+            max_tokens=_MAX_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": USER_PROMPT.format(
+                resume_text=resume_text,
+                jd_text=jd_text,
+            )}],
+        ) as s:
+            yield from s.text_stream
+
+
+def get_service() -> ClaudeService:
+    return ClaudeService(anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))

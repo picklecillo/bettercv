@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 
-from .claude import get_ats_analysis
+from .claude import get_service
 from .pdf import extract_text_from_pdf
 
 _API_ERRORS = {
@@ -38,7 +38,7 @@ def analyze(request):
         return HttpResponse("Please provide a job description.", status=400)
 
     try:
-        result = get_ats_analysis(resume_text, jd_text)
+        result = get_service().analyze(resume_text, jd_text)
     except anthropic.APIStatusError as e:
         if "credit balance is too low" in str(e):
             return HttpResponse(_CREDIT_MESSAGE, status=402)
