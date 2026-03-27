@@ -1,41 +1,389 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BetterCV — ATS Analyzer</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- daisyUI + Tailwind -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- HTMX + SSE extension -->
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+
+  <style type="text/tailwindcss">
+    :root {
+      --ink:     #1a1a2e;
+      --ink-mid: #3d3d5c;
+      --cream:   #f5f0e8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8d9a8;
+      --surface: #ffffff;
+      --border:  #e2ddd4;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    .display-font {
+      font-family: 'DM Serif Display', serif;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      background-color: var(--ink);
+      padding: 2rem 2.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .site-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .site-header .tagline {
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: var(--gold-lt);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ── Main layout ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      padding: 2.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .main-grid { grid-template-columns: 1fr; padding: 1.25rem; }
+    }
+
+    /* ── Cards ── */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.75rem;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1rem 0;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .divider-label::before,
+    .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gold-lt);
+    }
+
+    /* ── Inputs ── */
+    .styled-textarea {
+      width: 100%;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.875rem 1rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.875rem;
+      color: var(--ink);
+      resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .styled-textarea::placeholder { color: #b0a99a; }
+    .styled-textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    }
+
+    .styled-file {
+      width: 100%;
+      background: var(--cream);
+      border: 1px dashed var(--gold-lt);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
+      color: var(--ink-mid);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .styled-file:hover { border-color: var(--gold); }
+
+    /* ── Submit button ── */
+    .analyze-btn {
+      background-color: var(--ink);
+      color: var(--cream);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.85rem 2.5rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.15s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .analyze-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gold);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .analyze-btn:hover { background-color: var(--ink-mid); }
+    .analyze-btn:active { transform: translateY(1px); }
+    .analyze-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Result area ── */
+    .result-wrapper {
+      padding: 0 2.5rem 2.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      min-height: 200px;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 3rem;
+      color: #c5bfb4;
+    }
+
+    .result-placeholder svg {
+      width: 2.5rem;
+      height: 2.5rem;
+      opacity: 0.4;
+    }
+
+    .result-placeholder p {
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .result-accent-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 100%);
+    }
+
+    /* ── Result content (rendered markdown) ── */
+    #result {
+      padding: 2rem 2.25rem;
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      color: var(--ink);
+    }
+
+    #result h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      color: var(--ink);
+      margin: 1.75rem 0 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #result h2:first-child { margin-top: 0; }
+
+    #result table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+
+    #result th {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 0.5rem 0.875rem;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    #result td {
+      padding: 0.5rem 0.875rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #result tr:last-child td { border-bottom: none; }
+    #result tr:nth-child(even) td { background: var(--cream); }
+
+    #result ul {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 1rem;
+    }
+
+    #result ul li {
+      padding: 0.35rem 0 0.35rem 1.25rem;
+      position: relative;
+      font-size: 0.9rem;
+    }
+
+    #result ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    #result strong { font-weight: 600; color: var(--ink); }
+    #result p { margin: 0.5rem 0; }
+
+    /* ── Error state ── */
+    .result-error {
+      border-left: 3px solid #e53e3e;
+      background: #fff5f5;
+      color: #742a2a;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 2.25rem;
+      border-radius: 2px;
+      font-size: 0.875rem;
+    }
+  </style>
 </head>
 <body>
 
-  <h1>BetterCV — ATS Analyzer</h1>
+  <!-- Header -->
+  <header class="site-header">
+    <h1>BetterCV</h1>
+    <span class="tagline">ATS Resume Analyzer</span>
+  </header>
 
-  <form hx-post="/analyze/"
-        hx-target="#result"
-        hx-swap="innerHTML"
-        hx-encoding="multipart/form-data">
-    {% csrf_token %}
+  <!-- Form grid -->
+  <main>
+    <form hx-post="/analyze/"
+          hx-target="#result"
+          hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
+          hx-indicator="#submit-btn">
 
-    <div>
-      <label for="resume_text">Resume (paste text)</label>
-      <textarea id="resume_text" name="resume_text" rows="10" placeholder="Paste your resume here..."></textarea>
+      {% csrf_token %}
+
+      <div class="main-grid">
+
+        <!-- Resume input -->
+        <div class="input-card">
+          <span class="card-label">Your Resume</span>
+          <textarea
+            id="resume_text"
+            name="resume_text"
+            class="styled-textarea"
+            rows="14"
+            placeholder="Paste the full text of your resume here…"></textarea>
+
+          <div class="divider-label">or upload</div>
+
+          <input
+            id="resume_pdf"
+            type="file"
+            name="resume_pdf"
+            accept=".pdf"
+            class="styled-file">
+        </div>
+
+        <!-- Job description input -->
+        <div class="input-card">
+          <span class="card-label">Job Description</span>
+          <textarea
+            id="jd_text"
+            name="jd_text"
+            class="styled-textarea"
+            rows="18"
+            placeholder="Paste the full job description here…"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Submit -->
+      <div style="padding: 0 2.5rem 2.5rem; max-width: 1200px; margin: 0 auto; display: flex; justify-content: flex-end;">
+        <button id="submit-btn" type="submit" class="analyze-btn">
+          Analyze Resume
+        </button>
+      </div>
+
+    </form>
+
+    <!-- Result -->
+    <div class="result-wrapper">
+      <div class="result-card">
+        <div class="result-accent-bar"></div>
+        <div id="result">
+          <div class="result-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
+            </svg>
+            <p>Analysis will appear here</p>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div>
-      <label for="resume_pdf">Or upload a PDF</label>
-      <input id="resume_pdf" type="file" name="resume_pdf" accept=".pdf">
-    </div>
-
-    <div>
-      <label for="jd_text">Job Description</label>
-      <textarea id="jd_text" name="jd_text" rows="10" placeholder="Paste the job description here..."></textarea>
-    </div>
-
-    <button type="submit">Analyze</button>
-  </form>
-
-  <div id="result"></div>
+  </main>
 
 </body>
 </html>
