@@ -14,6 +14,9 @@
   <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
+  <!-- HTMX config: swap content for all response codes so 4xx errors are visible -->
+  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
+
   <!-- HTMX + SSE extension -->
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
@@ -227,14 +230,30 @@
     }
 
     /* ── Streaming ── */
+
+    /* Shimmer on the accent bar while SSE container is active */
+    .result-card:has(#sse-container) .result-accent-bar {
+      background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 50%, var(--ink) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
     .stream-status {
-      padding: 1.5rem 2.25rem 0;
+      padding: 1.5rem 2.25rem 0.5rem;
       font-size: 0.8rem;
       font-weight: 500;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--gold);
     }
+
+    /* Hide status once first chunk arrives */
+    #stream-output:not(:empty) ~ .stream-status { display: none; }
 
     .dots {
       display: inline-block;

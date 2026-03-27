@@ -28,14 +28,16 @@ class AnalyzeViewTests(TestCase):
         response = self.client.get("/analyze/")
         self.assertEqual(response.status_code, 405)
 
-    def test_missing_resume_returns_400(self):
+    def test_missing_resume_returns_error(self):
         response = self.client.post("/analyze/", {"jd_text": "some job"})
         self.assertEqual(response.status_code, 400)
+        self.assertIn(b"result-error", response.content)
         self.assertIn(b"resume", response.content.lower())
 
-    def test_missing_jd_returns_400(self):
+    def test_missing_jd_returns_error(self):
         response = self.client.post("/analyze/", {"resume_text": "my resume"})
         self.assertEqual(response.status_code, 400)
+        self.assertIn(b"result-error", response.content)
         self.assertIn(b"job description", response.content.lower())
 
     def test_valid_post_returns_sse_container(self):
@@ -58,7 +60,7 @@ class AnalyzeViewTests(TestCase):
         self.assertEqual(session_values[0]["resume_text"], "my resume")
         self.assertEqual(session_values[0]["jd_text"], "some job")
 
-    def test_unreadable_pdf_returns_400(self):
+    def test_unreadable_pdf_returns_error(self):
         fake_pdf = io.BytesIO(b"bad pdf")
         fake_pdf.name = "resume.pdf"
 
@@ -70,6 +72,7 @@ class AnalyzeViewTests(TestCase):
             })
 
         self.assertEqual(response.status_code, 400)
+        self.assertIn(b"result-error", response.content)
         self.assertIn(b"Could not read", response.content)
 
     def test_pdf_upload_takes_priority_over_text(self):
@@ -135,6 +138,24 @@ class StreamViewTests(TestCase):
             response = self.client.get(f"/analyze/stream/?key={key}")
             self._consume(response)
         self.assertNotIn(key, self.client.session)
+
+    def test_renders_markdown_after_streaming(self):
+        key = self._setup_session()
+        with patch("analyzer.views.get_service", return_value=FakeClaudeService("## ATS Score\n80/100")):
+            response = self.client.get(f"/analyze/stream/?key={key}")
+            content = self._consume(response)
+        self.assertIn("event: render", content)
+        self.assertIn("<h2>ATS Score</h2>", content)
+
+    def test_no_render_event_on_error(self):
+        key = self._setup_session()
+        fake = FakeClaudeService()
+        fake.stream = MagicMock(side_effect=ClaudeServiceError("Rate limit hit.", 502))
+        with patch("analyzer.views.get_service", return_value=fake):
+            response = self.client.get(f"/analyze/stream/?key={key}")
+            content = self._consume(response)
+        self.assertNotIn("event: render", content)
+        self.assertIn("event: done", content)
 
     def test_service_error_streamed_as_error_chunk(self):
         key = self._setup_session()
