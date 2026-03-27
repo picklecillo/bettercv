@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV — ATS Analyzer</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+</head>
+<body>
+
+  <h1>BetterCV — ATS Analyzer</h1>
+
+  <form hx-post="/analyze/"
+        hx-target="#result"
+        hx-swap="innerHTML"
+        hx-encoding="multipart/form-data">
+    {% csrf_token %}
+
+    <div>
+      <label for="resume_text">Resume (paste text)</label>
+      <textarea id="resume_text" name="resume_text" rows="10" placeholder="Paste your resume here..."></textarea>
+    </div>
+
+    <div>
+      <label for="resume_pdf">Or upload a PDF</label>
+      <input id="resume_pdf" type="file" name="resume_pdf" accept=".pdf">
+    </div>
+
+    <div>
+      <label for="jd_text">Job Description</label>
+      <textarea id="jd_text" name="jd_text" rows="10" placeholder="Paste the job description here..."></textarea>
+    </div>
+
+    <button type="submit">Analyze</button>
+  </form>
+
+  <div id="result"></div>
+
+</body>
+</html>

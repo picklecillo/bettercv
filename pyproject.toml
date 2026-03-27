@@ -1,0 +1,12 @@
+[project]
+name = "bettercv"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.86.0",
+    "django>=5.2.12",
+    "markdown>=3.10.2",
+    "pdfplumber>=0.11.9",
+    "python-dotenv>=1.2.2",
+]
