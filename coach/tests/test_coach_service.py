@@ -4,6 +4,23 @@ import anthropic
 
 from coach.coach_service import CoachParseError, CoachService, WorkExperience
 
+_EXPERIENCE = WorkExperience(
+    company="Acme Corp",
+    title="Senior Engineer",
+    dates="Jan 2019 – Mar 2022",
+    original_description="Maintained legacy systems.",
+)
+
+
+def _make_streaming_client(chunks: list[str]) -> MagicMock:
+    fake_stream = MagicMock()
+    fake_stream.__enter__ = lambda s: s
+    fake_stream.__exit__ = MagicMock(return_value=False)
+    fake_stream.text_stream = iter(chunks)
+    client = MagicMock(spec=anthropic.Anthropic)
+    client.messages.stream.return_value = fake_stream
+    return client
+
 
 def _make_tool_use_response(experiences: list[dict]):
     """Build a minimal Anthropic response containing a tool_use block."""
@@ -57,3 +74,38 @@ class CoachServiceParseTests(TestCase):
 
         with self.assertRaises(CoachParseError):
             service.parse_cv("some cv text")
+
+
+class CoachServiceStreamReplyTests(TestCase):
+
+    def test_stream_reply_yields_chunks(self):
+        client = _make_streaming_client(["Tell me ", "about your ", "achievements."])
+        service = CoachService(client)
+
+        result = "".join(service.stream_reply(_EXPERIENCE, []))
+
+        self.assertEqual(result, "Tell me about your achievements.")
+
+    def test_stream_reply_includes_work_experience_in_system_prompt(self):
+        client = _make_streaming_client(["ok"])
+        service = CoachService(client)
+
+        list(service.stream_reply(_EXPERIENCE, []))  # consume to trigger API call
+
+        call_kwargs = client.messages.stream.call_args.kwargs
+        self.assertIn("Acme Corp", call_kwargs["system"])
+        self.assertIn("Senior Engineer", call_kwargs["system"])
+        self.assertIn("Maintained legacy systems.", call_kwargs["system"])
+
+    def test_stream_reply_passes_history_as_messages(self):
+        client = _make_streaming_client(["ok"])
+        service = CoachService(client)
+        history = [
+            {"role": "user", "content": "Here is my experience."},
+            {"role": "assistant", "content": "What did you achieve?"},
+        ]
+
+        list(service.stream_reply(_EXPERIENCE, history))  # consume to trigger API call
+
+        call_kwargs = client.messages.stream.call_args.kwargs
+        self.assertEqual(call_kwargs["messages"], history)

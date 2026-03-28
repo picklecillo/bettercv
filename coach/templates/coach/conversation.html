@@ -1,0 +1,25 @@
+{% if history %}
+  {% for msg in history %}
+    {% if msg.role == "assistant" %}
+    <div class="chat-msg assistant-msg">
+      <div class="msg-body">{{ msg.content }}</div>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText(this.closest('.chat-msg').querySelector('.msg-body').innerText)">Copy</button>
+    </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+<div class="chat-input-area">
+  {% csrf_token %}
+  <form hx-post="/coach/chat/"
+        hx-target="#chat-transcript"
+        hx-swap="beforeend"
+        hx-encoding="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="exp_index" value="{{ exp_index }}">
+    <input type="hidden" name="is_followup" value="1">
+    <div class="chat-input-row">
+      <textarea name="user_message" class="chat-input" rows="2" placeholder="Reply to continue the conversation…"></textarea>
+      <button type="submit" class="send-btn">Send</button>
+    </div>
+  </form>
+</div>

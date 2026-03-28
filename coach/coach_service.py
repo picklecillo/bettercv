@@ -1,4 +1,5 @@
 import anthropic
+from collections.abc import Iterator
 from dataclasses import dataclass
 from django.conf import settings
 
@@ -47,6 +48,23 @@ CV:
 
 _MODEL = "claude-sonnet-4-20250514"
 
+_COACH_SYSTEM_PROMPT = """You are an expert resume coach helping a job seeker improve their CV.
+
+The candidate's work experience entry you are coaching:
+
+Company: {company}
+Title: {title}
+Dates: {dates}
+Original description:
+{original_description}
+
+Your goal:
+1. Ask targeted questions to draw out specific achievements, metrics, and impact from this role.
+2. Once you have enough detail (typically after 2–4 questions), propose a paragraph-form rewrite that leads with impact and uses strong action verbs.
+3. Incorporate any feedback the candidate gives in subsequent turns.
+
+Start by asking one focused question about what the candidate actually accomplished in this role."""
+
 
 class CoachService:
     def __init__(self, client: anthropic.Anthropic) -> None:
@@ -81,6 +99,22 @@ class CoachService:
             )
             for e in raw
         ]
+
+
+    def stream_reply(self, work_experience: WorkExperience, history: list[dict]) -> Iterator[str]:
+        system_prompt = _COACH_SYSTEM_PROMPT.format(
+            company=work_experience.company,
+            title=work_experience.title,
+            dates=work_experience.dates,
+            original_description=work_experience.original_description,
+        )
+        with self._client.messages.stream(
+            model=_MODEL,
+            max_tokens=2000,
+            system=system_prompt,
+            messages=history,
+        ) as s:
+            yield from s.text_stream
 
 
 def get_coach_service() -> CoachService:
