@@ -23,11 +23,11 @@ Bootstrap the Django project and `analyzer` app. Wire `GET /` to a view that ren
 
 ### Acceptance criteria
 
-- [ ] `python manage.py runserver` starts without errors
-- [ ] `GET /` returns 200 and renders the form (resume textarea, PDF file input, JD textarea, submit button)
-- [ ] HTMX and `hx-ext="sse"` are loaded on the page (verifiable in browser devtools)
-- [ ] Empty result div is present in the DOM
-- [ ] `ANTHROPIC_API_KEY` is loaded from `.env` via `python-dotenv` in `settings.py`
+- [x] `python manage.py runserver` starts without errors
+- [x] `GET /` returns 200 and renders the form (resume textarea, PDF file input, JD textarea, submit button)
+- [x] HTMX and `hx-ext="sse"` are loaded on the page (verifiable in browser devtools)
+- [x] Empty result div is present in the DOM
+- [x] `ANTHROPIC_API_KEY` is loaded from `.env` via `python-dotenv` in `settings.py`
 
 ---
 
@@ -41,10 +41,10 @@ Implement `POST /analyze/` as a synchronous view that calls Claude and returns t
 
 ### Acceptance criteria
 
-- [ ] Submitting the form with resume text + JD text calls Claude and displays the raw response in the result div
-- [ ] The Claude system prompt enforces the 5-section structure (ATS Score, Keyword Matches, Missing Keywords, Quick Wins, Overall Summary)
-- [ ] Empty resume or JD returns a user-visible error (not a 500)
-- [ ] `ANTHROPIC_API_KEY` missing or invalid surfaces a clear error message
+- [x] Submitting the form with resume text + JD text calls Claude and displays the raw response in the result div
+- [x] The Claude system prompt enforces the 5-section structure (ATS Score, Keyword Matches, Missing Keywords, Quick Wins, Overall Summary)
+- [x] Empty resume or JD returns a user-visible error (not a 500)
+- [x] `ANTHROPIC_API_KEY` missing or invalid surfaces a clear error message
 
 ---
 
@@ -58,10 +58,10 @@ Replace the batch view with an SSE endpoint. The form connects via `hx-ext="sse"
 
 ### Acceptance criteria
 
-- [ ] Analysis text appears incrementally in the result div as Claude streams it
-- [ ] SSE connection closes cleanly after the final chunk (no hanging connection)
-- [ ] A loading indicator is visible while streaming is in progress
-- [ ] Re-submitting the form while a stream is active cancels the previous stream and starts a new one
+- [x] Analysis text appears incrementally in the result div as Claude streams it
+- [x] SSE connection closes cleanly after the final chunk (no hanging connection)
+- [x] A loading indicator is visible while streaming is in progress
+- [x] Re-submitting the form while a stream is active cancels the previous stream and starts a new one
 
 ---
 
@@ -75,10 +75,10 @@ Add `pdfplumber` PDF extraction to `pdf.py`. Update the view to check for an upl
 
 ### Acceptance criteria
 
-- [ ] Uploading a valid PDF and submitting produces an analysis based on the PDF's text content
-- [ ] If both a PDF and pasted text are provided, the PDF takes priority
-- [ ] An invalid or unreadable PDF returns a user-visible error
-- [ ] Text-only flow from Phase 3 is unaffected
+- [x] Uploading a valid PDF and submitting produces an analysis based on the PDF's text content
+- [x] If both a PDF and pasted text are provided, the PDF takes priority
+- [x] An invalid or unreadable PDF returns a user-visible error
+- [x] Text-only flow from Phase 3 is unaffected
 
 ---
 
@@ -92,11 +92,11 @@ After the SSE stream completes, take the accumulated markdown buffer and convert
 
 ### Acceptance criteria
 
-- [ ] Section headers (`##`) render as HTML headings
-- [ ] Keyword Matches and Missing Keywords render as proper HTML tables
-- [ ] Bold text and inline formatting render correctly
-- [ ] Raw markdown is not visible to the user after streaming completes
-- [ ] Streaming still shows incremental plain text; only the final render switches to HTML
+- [x] Section headers (`##`) render as HTML headings
+- [x] Keyword Matches and Missing Keywords render as proper HTML tables
+- [x] Bold text and inline formatting render correctly
+- [x] Raw markdown is not visible to the user after streaming completes
+- [x] Streaming still shows incremental plain text; only the final render switches to HTML
 
 ---
 
@@ -110,8 +110,8 @@ Apply CSS to make the UI clean and usable. Add a visible loading/spinner state d
 
 ### Acceptance criteria
 
-- [ ] Form and result div are readable and well-spaced on a desktop browser
-- [ ] A spinner or progress indicator is shown while streaming is active
-- [ ] API errors (timeout, rate limit) show a friendly message instead of a broken UI
-- [ ] User can submit a new analysis after a previous one completes without refreshing
-- [ ] Page is usable on a mobile viewport (basic responsiveness)
+- [x] Form and result div are readable and well-spaced on a desktop browser
+- [x] A spinner or progress indicator is shown while streaming is active
+- [x] API errors (timeout, rate limit) show a friendly message instead of a broken UI
+- [x] User can submit a new analysis after a previous one completes without refreshing
+- [x] Page is usable on a mobile viewport (basic responsiveness)

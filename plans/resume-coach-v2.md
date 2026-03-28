@@ -70,17 +70,17 @@ When the user selects a work experience, HTMX POSTs a **hidden prefilled message
 
 ### Acceptance criteria
 
-- [ ] `GET /coach/` returns 200 with a CV input form (paste textarea + PDF upload)
-- [ ] `POST /coach/parse/` with pasted text swaps `<main>` to split-screen with an experience list
-- [ ] `POST /coach/parse/` with a PDF file extracts text and returns the same
-- [ ] PDF upload takes priority over pasted text when both are submitted
-- [ ] Submitting neither returns an error div
-- [ ] An unreadable PDF surfaces a `PdfExtractionError` as an error div
-- [ ] A CV with no detectable work experiences surfaces a `CoachParseError` error div
-- [ ] Parsed experiences and raw CV text are stored in `session["coach"]`
-- [ ] `CoachService.parse_cv()` is tested directly: valid CV (tool use response), no experiences, missing tool use block
-- [ ] `coach` app routes are registered under `/coach/` and do not touch `/analyze/` routes
-- [ ] Header includes nav links to both tools
+- [x] `GET /coach/` returns 200 with a CV input form (paste textarea + PDF upload)
+- [x] `POST /coach/parse/` with pasted text swaps `<main>` to split-screen with an experience list
+- [x] `POST /coach/parse/` with a PDF file extracts text and returns the same
+- [x] PDF upload takes priority over pasted text when both are submitted
+- [x] Submitting neither returns an error div
+- [x] An unreadable PDF surfaces a `PdfExtractionError` as an error div
+- [x] A CV with no detectable work experiences surfaces a `CoachParseError` error div
+- [x] Parsed experiences and raw CV text are stored in `session["coach"]`
+- [x] `CoachService.parse_cv()` is tested directly: valid CV (tool use response), no experiences, missing tool use block
+- [x] `coach` app routes are registered under `/coach/` and do not touch `/analyze/` routes
+- [x] Header includes nav links to both tools
 
 ---
 
@@ -94,14 +94,14 @@ The split-screen layout shows CV text in the left panel and the experience list 
 
 ### Acceptance criteria
 
-- [ ] After a successful parse, `<main>` shows the split-screen layout (CV text left, experience list + chat right)
-- [ ] Selecting a work experience starts a coaching conversation automatically (no manual prompt from the user)
-- [ ] The chat area opens with Claude's first question — no user bubble for the prefilled message
-- [ ] Claude's opening question streams in word by word via SSE
-- [ ] The user message + assistant reply are committed to `session["coach"]["conversations"][<exp_index>]` only after the stream completes
-- [ ] A stream error shows an inline error bubble and re-enables the chat input pre-filled with the failed message
-- [ ] `CoachService.stream_reply()` is tested: full `WorkExperience` object passed to API, chunks yielded correctly
-- [ ] View tests: selecting an experience returns a nonce-keyed SSE container; stream pops nonce and emits chunk + done events
+- [x] After a successful parse, `<main>` shows the split-screen layout (CV text left, experience list + chat right)
+- [x] Selecting a work experience starts a coaching conversation automatically (no manual prompt from the user)
+- [x] The chat area opens with Claude's first question — no user bubble for the prefilled message
+- [x] Claude's opening question streams in word by word via SSE
+- [x] The user message + assistant reply are committed to `session["coach"]["conversations"][<exp_index>]` only after the stream completes
+- [x] A stream error shows an inline error bubble and re-enables the chat input pre-filled with the failed message
+- [x] `CoachService.stream_reply()` is tested: full `WorkExperience` object passed to API, chunks yielded correctly
+- [x] View tests: selecting an experience returns a nonce-keyed SSE container; stream pops nonce and emits chunk + done events
 
 ---
 
@@ -117,15 +117,15 @@ Switching between experience conversations is handled by `GET /coach/conversatio
 
 ### Acceptance criteria
 
-- [ ] User can submit a message via the chat input
-- [ ] The user message bubble appears immediately (returned in the POST response fragment)
-- [ ] Claude's reply streams in word by word below the user bubble
-- [ ] Conversation history accumulates correctly across multiple turns
-- [ ] The full history (all prior turns) is passed to `CoachService.stream_reply()` on each turn
-- [ ] `GET /coach/conversation/<exp_index>/` returns history HTML for an already-coached experience
-- [ ] `GET /coach/conversation/<exp_index>/` triggers the first-turn flow for an uncoached experience
-- [ ] Switching experiences does not affect other experiences' histories
-- [ ] View tests: history accumulates across multiple POST → stream cycles; conversation switching works
+- [x] User can submit a message via the chat input
+- [x] The user message bubble appears immediately (returned in the POST response fragment)
+- [x] Claude's reply streams in word by word below the user bubble
+- [x] Conversation history accumulates correctly across multiple turns
+- [x] The full history (all prior turns) is passed to `CoachService.stream_reply()` on each turn
+- [x] `GET /coach/conversation/<exp_index>/` returns history HTML for an already-coached experience
+- [x] `GET /coach/conversation/<exp_index>/` triggers the first-turn flow for an uncoached experience
+- [x] Switching experiences does not affect other experiences' histories
+- [x] View tests: history accumulates across multiple POST → stream cycles; conversation switching works
 
 ---
 
@@ -139,8 +139,8 @@ A "Copy" button appears on each AI message bubble. Clicking it copies the messag
 
 ### Acceptance criteria
 
-- [ ] Each AI message bubble has a "Copy" button that copies its text to the clipboard
-- [ ] "Start over" navigates to `GET /coach/` (full reload; no HTMX)
-- [ ] Starting a fresh session clears `session["coach"]`
-- [ ] The copy button is keyboard-accessible
-- [ ] Switching to a different experience via the list does not affect any other experience's history
+- [x] Each AI message bubble has a "Copy" button that copies its text to the clipboard
+- [x] "Start over" navigates to `GET /coach/` (full reload; no HTMX)
+- [x] Starting a fresh session clears `session["coach"]`
+- [x] The copy button is keyboard-accessible
+- [x] Switching to a different experience via the list does not affect any other experience's history
