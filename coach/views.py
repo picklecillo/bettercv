@@ -26,6 +26,7 @@ def _experiences_from_session(session) -> list[WorkExperience] | None:
 
 
 def index(request):
+    request.session.pop("coach", None)
     return render(request, "coach/index.html")
 
 
@@ -152,6 +153,7 @@ def stream(request):
                 f'<div class="chat-msg assistant-msg" id="msg-{key}">'
                 f'<div class="msg-body">{safe_full}</div>'
                 f'<button class="copy-btn" '
+                f'aria-label="Copy this response to clipboard" '
                 f'onclick="navigator.clipboard.writeText(this.closest(\'.chat-msg\').querySelector(\'.msg-body\').innerText)">'
                 f'Copy</button></div>'
             )
