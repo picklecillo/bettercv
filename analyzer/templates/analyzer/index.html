@@ -46,10 +46,10 @@
     /* ── Header ── */
     .site-header {
       background-color: var(--ink);
-      padding: 2rem 2.5rem;
+      padding: 1.25rem 2.5rem;
       display: flex;
-      align-items: baseline;
-      gap: 1rem;
+      align-items: center;
+      gap: 1.5rem;
       border-bottom: 3px solid var(--gold);
     }
 
@@ -59,15 +59,28 @@
       color: var(--cream);
       letter-spacing: -0.02em;
       line-height: 1;
+      margin-right: auto;
     }
 
-    .site-header .tagline {
-      font-size: 0.8rem;
-      font-weight: 300;
-      color: var(--gold-lt);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
+    .site-nav {
+      display: flex;
+      gap: 0.25rem;
     }
+
+    .nav-link {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      text-decoration: none;
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
+    .nav-link.active { background: var(--gold); color: var(--ink); }
 
     /* ── Main layout ── */
     .main-grid {
@@ -359,7 +372,10 @@
   <!-- Header -->
   <header class="site-header">
     <h1>BetterCV</h1>
-    <span class="tagline">ATS Resume Analyzer</span>
+    <nav class="site-nav">
+      <a href="/" class="nav-link active">ATS Analyzer</a>
+      <a href="/coach/" class="nav-link">Resume Coach</a>
+    </nav>
   </header>
 
   <!-- Form grid -->
