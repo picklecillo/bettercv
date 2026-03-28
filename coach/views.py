@@ -68,30 +68,44 @@ def chat(request):
         return _error("Invalid experience selected.")
 
     experience = WorkExperience(**experience_data)
+    is_followup = request.POST.get("is_followup") == "1"
 
-    # The prefilled first message is the original description (hidden from UI)
-    user_message = experience.original_description
+    if is_followup:
+        user_message = request.POST.get("user_message", "").strip()
+        if not user_message:
+            return _error("Please enter a message.")
+    else:
+        # Hidden prefilled first message — not shown in the UI
+        user_message = experience.original_description
 
     nonce = str(uuid.uuid4())
     request.session[nonce] = {
         "exp_index": exp_index,
         "user_message": user_message,
     }
-    # Mark session as modified since we mutated via a new key
     request.session.modified = True
 
-    return HttpResponse(
-        f'<div id="sse-container-{exp_index}"'
+    sse_container = (
+        f'<div id="sse-container-{nonce}"'
         f'     hx-ext="sse"'
         f'     sse-connect="/coach/stream/?key={nonce}"'
         f'     sse-close="done">'
-        f'  <div id="stream-output-{exp_index}"'
+        f'  <div class="stream-status">Thinking<span class="dots">...</span></div>'
+        f'  <div id="stream-output-{nonce}"'
         f'       sse-swap="chunk"'
         f'       hx-swap="beforeend"></div>'
-        f'  <div class="stream-status">Thinking<span class="dots">...</span></div>'
-        f'</div>',
-        content_type="text/html",
+        f'  <div sse-swap="wrap"'
+        f'       hx-target="#sse-container-{nonce}"'
+        f'       hx-swap="outerHTML"></div>'
+        f'</div>'
     )
+
+    if is_followup:
+        safe_msg = escape(user_message).replace("\n", "<br>")
+        user_bubble = f'<div class="chat-msg user-msg"><div class="msg-body">{safe_msg}</div></div>'
+        return HttpResponse(user_bubble + sse_container, content_type="text/html")
+
+    return HttpResponse(sse_container, content_type="text/html")
 
 
 def stream(request):
@@ -133,6 +147,16 @@ def stream(request):
             ]
             request.session.modified = True
             request.session.save()
+            safe_full = escape(assistant_reply).replace("\n", "<br>")
+            wrapped = (
+                f'<div class="chat-msg assistant-msg" id="msg-{key}">'
+                f'<div class="msg-body">{safe_full}</div>'
+                f'<button class="copy-btn" '
+                f'onclick="navigator.clipboard.writeText(this.closest(\'.chat-msg\').querySelector(\'.msg-body\').innerText)">'
+                f'Copy</button></div>'
+            )
+            wrapped_lines = "\n".join(f"data: {line}" for line in wrapped.splitlines())
+            yield f"event: wrap\n{wrapped_lines}\n\n"
 
         yield "event: done\ndata: \n\n"
 

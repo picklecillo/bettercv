@@ -125,6 +125,22 @@
       word-break: break-word;
     }
 
+    .user-msg {
+      align-self: flex-end;
+      max-width: 85%;
+    }
+
+    .user-msg .msg-body {
+      background: var(--ink);
+      color: var(--cream);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .copy-btn {
       align-self: flex-end;
       font-family: 'Outfit', sans-serif;
@@ -262,7 +278,7 @@
           hx-swap="beforeend"
           hx-vals='{"exp_index": "{{ forloop.counter0 }}"}'
           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-          onclick="document.querySelectorAll('.exp-btn').forEach(b=>b.classList.remove('selected')); this.classList.add('selected')">
+          onclick="document.querySelectorAll('.exp-btn').forEach(b=>b.classList.remove('selected')); this.classList.add('selected'); document.getElementById('current-exp-index').value='{{ forloop.counter0 }}'; document.getElementById('chat-input-area').style.display='block';">
           <strong>{{ exp.title }}</strong><br>
           <span style="opacity:0.7; font-size:0.72rem">{{ exp.company }} &middot; {{ exp.dates }}</span>
         </button>
@@ -271,6 +287,29 @@
 
       <div id="chat-transcript">
         <div class="chat-placeholder">Select a work experience to begin</div>
+      </div>
+
+      <!-- Chat input — hidden until an experience is selected -->
+      <div id="chat-input-area" style="display:none" class="chat-input-area">
+        <form id="chat-form"
+              hx-post="/coach/chat/"
+              hx-target="#chat-transcript"
+              hx-swap="beforeend"
+              hx-encoding="multipart/form-data"
+              hx-on::after-request="this.reset()">
+          {% csrf_token %}
+          <input type="hidden" name="exp_index" id="current-exp-index" value="">
+          <input type="hidden" name="is_followup" value="1">
+          <div class="chat-input-row">
+            <textarea
+              name="user_message"
+              class="chat-input"
+              rows="2"
+              placeholder="Reply to continue the conversation…"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
+            <button type="submit" class="send-btn">Send</button>
+          </div>
+        </form>
       </div>
 
       <div class="start-over">

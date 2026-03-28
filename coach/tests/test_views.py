@@ -44,6 +44,29 @@ class CoachChatTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("result-error", response.content.decode())
 
+    def _post_followup(self, fake, user_message="I led a team of 5.", exp_index="0"):
+        _seed_coach_session(self.client)
+        with patch("coach.views.get_coach_service", return_value=fake):
+            return self.client.post("/coach/chat/", {
+                "exp_index": exp_index,
+                "user_message": user_message,
+                "is_followup": "1",
+            })
+
+    def test_followup_returns_user_bubble_and_sse_container(self):
+        response = self._post_followup(_fake())
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("I led a team of 5.", content)   # user bubble
+        self.assertIn("sse-connect", content)           # SSE container
+
+    def test_followup_empty_message_returns_error(self):
+        response = self._post_followup(_fake(), user_message="  ")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("result-error", response.content.decode())
+
 
 class CoachStreamTests(TestCase):
 
@@ -95,6 +118,47 @@ class CoachStreamTests(TestCase):
         self.assertEqual(history[-1]["role"], "assistant")
         self.assertIn("achievements", history[-1]["content"])
 
+    def test_followup_stream_includes_prior_history(self):
+        """After a first turn, a second stream call should receive full history."""
+        fake = _fake()
+
+        # First turn
+        nonce1 = self._setup_stream(fake)
+        with patch("coach.views.get_coach_service", return_value=fake):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce1}"))
+
+        # Second turn (follow-up)
+        with patch("coach.views.get_coach_service", return_value=fake):
+            self.client.post("/coach/chat/", {
+                "exp_index": "0",
+                "user_message": "Make it shorter.",
+                "is_followup": "1",
+            })
+        # Find the new nonce in session
+        nonce2 = next(
+            k for k in self.client.session.keys()
+            if k != "coach" and isinstance(self.client.session[k], dict)
+            and "user_message" in self.client.session[k]
+        )
+
+        # Capture what history stream_reply receives
+        received_history = []
+        original_stream_reply = fake.stream_reply
+
+        def capturing_stream_reply(work_experience, history):
+            received_history.extend(history)
+            yield from original_stream_reply(work_experience, history)
+
+        fake.stream_reply = capturing_stream_reply
+        with patch("coach.views.get_coach_service", return_value=fake):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce2}"))
+
+        # Should contain the first turn's exchange plus new user message
+        roles = [m["role"] for m in received_history]
+        self.assertIn("user", roles)
+        self.assertIn("assistant", roles)
+        self.assertEqual(received_history[-1]["content"], "Make it shorter.")
+
     def test_error_not_committed_to_history(self):
         from unittest.mock import MagicMock
         fake = _fake()
@@ -106,6 +170,68 @@ class CoachStreamTests(TestCase):
             self._consume(response)
         conversations = self.client.session["coach"]["conversations"]
         self.assertEqual(conversations, {})
+
+
+class CoachConversationTests(TestCase):
+
+    def _seed_with_history(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [
+            {"role": "user", "content": "Built things."},
+            {"role": "assistant", "content": "What were your biggest achievements?"},
+        ]
+        session.save()
+
+    def test_returns_200_with_existing_history(self):
+        self._seed_with_history()
+        response = self.client.get("/coach/conversation/0/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("biggest achievements", response.content.decode())
+
+    def test_returns_200_with_no_history(self):
+        _seed_coach_session(self.client)
+        response = self.client.get("/coach/conversation/0/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_no_session_returns_error(self):
+        response = self.client.get("/coach/conversation/0/")
+        self.assertEqual(response.status_code, 400)
+
+
+class ExperienceSwitchingTests(TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_coaching_second_experience_does_not_affect_first(self):
+        fake = _fake()
+        _seed_coach_session(self.client)
+
+        # Coach experience 0
+        with patch("coach.views.get_coach_service", return_value=fake):
+            r0 = self.client.post("/coach/chat/", {"exp_index": "0"})
+        import re
+        nonce0 = re.search(r'key=([\w-]+)', r0.content.decode()).group(1)
+        with patch("coach.views.get_coach_service", return_value=fake):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce0}"))
+
+        history_0_after_first = list(self.client.session["coach"]["conversations"]["0"])
+
+        # Coach experience 1
+        with patch("coach.views.get_coach_service", return_value=fake):
+            r1 = self.client.post("/coach/chat/", {"exp_index": "1"})
+        nonce1 = re.search(r'key=([\w-]+)', r1.content.decode()).group(1)
+        with patch("coach.views.get_coach_service", return_value=fake):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce1}"))
+
+        # Experience 0 history should be unchanged
+        self.assertEqual(
+            self.client.session["coach"]["conversations"]["0"],
+            history_0_after_first,
+        )
+        # Experience 1 history should exist separately
+        self.assertIn("1", self.client.session["coach"]["conversations"])
 
 
 class CoachIndexTests(TestCase):
