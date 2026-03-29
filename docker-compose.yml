@@ -1,0 +1,72 @@
+services:
+  web:
+    build:
+      context: .
+      # target: dev
+    image: bettercv-web
+    command: uv run python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - /app/.venv
+      # - media_data:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: False
+      # DATABASE_URL: ${DATABASE_URL}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+    # depends_on:
+      # db:
+        # condition: service_healthy
+
+  # tailwind:
+  #   build:
+  #     context: .
+  #     target: dev
+  #   command: uv run python manage.py tailwind start
+  #   volumes:
+  #     - .:/app
+  #     - /app/.venv
+  #   environment:
+  #     SECRET_KEY: ${SECRET_KEY}
+  #     DEBUG: ${DEBUG:-True}
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+  # e2e:
+  #   build:
+  #     context: .
+  #     target: dev
+  #   image: eventos-web
+  #   environment:
+  #     SECRET_KEY: ${SECRET_KEY}
+  #     DATABASE_URL: postgis://postgres:postgres@db:5432/eventos_db
+  #     DJANGO_ALLOW_ASYNC_UNSAFE: "1"
+  #     DEBUG: "0"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+  # db:
+  #   image: postgis/postgis:17-3.5
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_DB: eventos_db
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+# volumes:
+  # postgres_data:
+  # media_data:
