@@ -9,7 +9,7 @@ RUN uv sync --frozen --no-dev
 
 COPY . .
 
-RUN export SECRET_KEY=build && uv run python manage.py collectstatic --noinput
+RUN export SECRET_KEY=build ANTHROPIC_API_KEY=fake-key-123 && uv run python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
