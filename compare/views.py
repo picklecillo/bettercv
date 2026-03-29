@@ -29,6 +29,8 @@ def parse_resume(request):
             resume_text = extract_text_from_pdf(request.FILES["resume_pdf"])
         except PdfExtractionError as e:
             return _error(str(e))
+        except Exception as e:
+            return _error(str(e))
     else:
         resume_text = request.POST.get("resume_text", "").strip()
         if not resume_text:
