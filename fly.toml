@@ -1,0 +1,53 @@
+# fly.toml app configuration file generated for bettercv on 2026-03-29T17:46:33-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'bettercv'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  DEBUG = 'False'
+  PORT = '8000'
+
+[processes]
+  app = "uv run gunicorn ats_analyzer.wsgi:application --bind 0.0.0.0:8000 --workers 1"
+
+[deploy]
+  release_command = "sh -c 'for i in 1 2 3 4 5; do uv run python manage.py migrate --noinput && exit 0; echo \"Retry $i...\"; sleep 5; done; exit 1'"
+
+[[services]]
+  http_checks = []
+  internal_port = 8000
+  processes = ["app"]
+  protocol = "tcp"
+  script_checks = []
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "10s"
+    interval = "30s"
+    timeout = "5s"
+    path = "/"
+
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 512
