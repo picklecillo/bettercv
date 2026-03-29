@@ -11,6 +11,7 @@ primary_region = 'iad'
 
 [env]
   DEBUG = 'False'
+  ENV = "production"
   PORT = '8000'
 
 [processes]
