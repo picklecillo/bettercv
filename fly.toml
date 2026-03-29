@@ -13,6 +13,7 @@ primary_region = 'iad'
   DEBUG = 'True'
   ENV = "production"
   PORT = '8000'
+  ALLOWED_HOSTS = ".fly.dev"
 
 [processes]
   app = "uv run gunicorn ats_analyzer.wsgi:application --bind 0.0.0.0:8000 --workers 1"
