@@ -10,7 +10,7 @@ primary_region = 'iad'
   dockerfile = 'Dockerfile'
 
 [env]
-  DEBUG = 'False'
+  DEBUG = 'True'
   ENV = "production"
   PORT = '8000'
 
