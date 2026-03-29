@@ -1,0 +1,371 @@
+  <style type="text/tailwindcss">
+    :root {
+      --ink:     #1a1a2e;
+      --ink-mid: #3d3d5c;
+      --cream:   #f5f0e8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8d9a8;
+      --surface: #ffffff;
+      --border:  #e2ddd4;
+    }
+
+    .workspace {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem 4rem;
+    }
+
+    /* ── Summary table ── */
+    .summary-section {
+      margin-bottom: 2rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
+      font-size: 0.875rem;
+    }
+
+    .summary-table th {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .summary-table td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink);
+    }
+
+    .summary-table tr:last-child td { border-bottom: none; }
+    .summary-table tr:nth-child(even) td { background: var(--cream); }
+
+    .score-badge {
+      display: inline-block;
+      background: var(--gold-lt);
+      color: var(--ink);
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      font-size: 0.8rem;
+    }
+
+    .status-analyzing {
+      color: var(--gold);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
+
+    .table-empty {
+      padding: 1.25rem 1rem;
+      font-size: 0.825rem;
+      color: #c5bfb4;
+      font-style: italic;
+    }
+
+    /* ── Add JD form ── */
+    .add-jd-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
+      margin-bottom: 2rem;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+
+    .styled-textarea {
+      width: 100%;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.875rem 1rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.875rem;
+      color: var(--ink);
+      resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .styled-textarea::placeholder { color: #b0a99a; }
+    .styled-textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    }
+
+    .add-jd-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    .action-btn {
+      background-color: var(--ink);
+      color: var(--cream);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.75rem 2rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    .action-btn:hover { background-color: var(--ink-mid); }
+    .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Analysis cards ── */
+    .analysis-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .card-top-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 100%);
+    }
+
+    .card-top-bar.streaming {
+      background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 50%, var(--ink) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .remove-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #c5bfb4;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .remove-btn:hover { color: #e53e3e; border-color: #e53e3e; }
+
+    /* ── Stream output ── */
+    .stream-status {
+      padding: 1rem 1.5rem 0.25rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .dots {
+      display: inline-block;
+      animation: blink 1.2s step-start infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .stream-output {
+      padding: 0.5rem 1.5rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* rendered markdown */
+    .analysis-result {
+      padding: 1.5rem;
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      color: var(--ink);
+    }
+
+    .analysis-result h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      color: var(--ink);
+      margin: 1.5rem 0 0.6rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .analysis-result h2:first-child { margin-top: 0; }
+
+    .analysis-result table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .analysis-result th {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 0.45rem 0.875rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .analysis-result td {
+      padding: 0.45rem 0.875rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .analysis-result tr:last-child td { border-bottom: none; }
+    .analysis-result tr:nth-child(even) td { background: var(--cream); }
+    .analysis-result ul { list-style: none; padding: 0; margin: 0.4rem 0 0.8rem; }
+    .analysis-result ul li {
+      padding: 0.3rem 0 0.3rem 1.25rem;
+      position: relative;
+      font-size: 0.9rem;
+    }
+    .analysis-result ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .analysis-result strong { font-weight: 600; }
+    .analysis-result p { margin: 0.4rem 0; }
+
+    /* ── Error ── */
+    .result-error {
+      border-left: 3px solid #e53e3e;
+      background: #fff5f5;
+      color: #742a2a;
+      padding: 0.875rem 1rem;
+      margin: 1rem 1.5rem;
+      border-radius: 2px;
+      font-size: 0.875rem;
+    }
+
+    /* ── Start over ── */
+    .start-over {
+      text-align: right;
+      padding-top: 1rem;
+    }
+    .start-over a {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+    .start-over a:hover { opacity: 1; }
+  </style>
+
+  <div id="compare-workspace" class="workspace">
+
+    <!-- Summary table -->
+    <div class="summary-section">
+      <span class="section-label">Score Summary</span>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Role</th>
+            <th>ATS Score</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="summary-tbody">
+          <tr><td colspan="5" class="table-empty">No job descriptions added yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add JD form -->
+    <div class="add-jd-card">
+      <span class="card-label">Add a Job Description</span>
+      <form hx-post="/compare/add-jd/"
+            hx-target="#jd-cards"
+            hx-swap="beforeend"
+            hx-encoding="multipart/form-data"
+            hx-on::after-request="this.reset()">
+        {% csrf_token %}
+        <textarea
+          name="jd_text"
+          class="styled-textarea"
+          rows="8"
+          placeholder="Paste a job description here…"></textarea>
+        <div id="add-jd-error"></div>
+        <div class="add-jd-row">
+          <button type="submit" class="action-btn">Analyze</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Analysis cards -->
+    <div id="jd-cards"></div>
+
+    <div class="start-over">
+      <a href="/compare/">↩ Start over</a>
+    </div>
+
+  </div>

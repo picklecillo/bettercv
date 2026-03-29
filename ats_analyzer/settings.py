@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'analyzer',
     'coach',
+    'compare',
 ]
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")

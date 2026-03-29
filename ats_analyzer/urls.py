@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('analyzer.urls')),
     path('coach/', include('coach.urls')),
+    path('compare/', include('compare.urls')),
 ]
