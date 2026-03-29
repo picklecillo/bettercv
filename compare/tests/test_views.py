@@ -207,11 +207,12 @@ class RemoveJdTests(TestCase):
         self.client.post("/compare/remove-jd/", {"jd_id": jd_id})
         self.assertNotIn(jd_id, self.client.session["compare"]["jds"])
 
-    def test_returns_empty_200(self):
+    def test_returns_200_with_card_oob_delete(self):
         jd_id = self._seed_with_jd()
         response = self.client.post("/compare/remove-jd/", {"jd_id": jd_id})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, b"")
+        self.assertIn(f'id="card-{jd_id}"', response.content.decode())
+        self.assertIn('hx-swap-oob="delete"', response.content.decode())
 
     def test_no_session_returns_400(self):
         response = self.client.post("/compare/remove-jd/", {"jd_id": "x"})

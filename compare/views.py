@@ -127,7 +127,10 @@ def remove_jd(request):
     del compare["jds"][jd_id]
     request.session.modified = True
 
-    return HttpResponse("", status=200)
+    # Primary swap (hx-target="#summary-row-{jd_id}" hx-swap="delete") removes the row.
+    # OOB delete removes the analysis card.
+    card_oob = f'<div id="card-{jd_id}" hx-swap-oob="delete"></div>'
+    return HttpResponse(card_oob, content_type="text/html")
 
 
 def stream(request):
@@ -192,9 +195,9 @@ def stream(request):
                 f'<button class="remove-btn" '
                 f'hx-post="/compare/remove-jd/" '
                 f'hx-vals=\'{{"jd_id": "{jd_id}"}}\' '
-                f'hx-headers=\'{{"X-CSRFToken": ""}}\' '
-                f'hx-target="#card-{jd_id}" '
-                f'hx-swap="outerHTML" '
+                f'hx-include="[name=csrfmiddlewaretoken]" '
+                f'hx-target="#summary-row-{jd_id}" '
+                f'hx-swap="delete" '
                 f'hx-confirm="Remove this analysis?">'
                 f'Remove</button>'
             )

@@ -105,8 +105,8 @@ If no input is provided, or the PDF is unreadable, a styled error div is returne
 
 - [x] `POST /compare/remove-jd/` with a valid `jd_id` removes the slot from session and returns 200
 - [x] `POST /compare/remove-jd/` with an unknown `jd_id` returns 400
-- [ ] Removing a JD removes its card and summary table row from the DOM
-- [ ] Removing one JD does not affect any other JD's card or table row
+- [x] Removing a JD removes its card and summary table row from the DOM
+- [x] Removing one JD does not affect any other JD's card or table row
 - [x] `POST /compare/add-jd/` with 10 JDs already present returns an error div
 - [x] Adding an 11th JD does not create a session slot
 - [x] View tests cover: successful remove, unknown jd_id, limit enforcement
