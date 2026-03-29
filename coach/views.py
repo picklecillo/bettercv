@@ -1,4 +1,5 @@
 import dataclasses
+import re
 import uuid
 
 from django.http import HttpResponse, StreamingHttpResponse
@@ -148,14 +149,28 @@ def stream(request):
             ]
             request.session.modified = True
             request.session.save()
-            safe_full = escape(assistant_reply).replace("\n", "<br>")
+
+            # Extract <rewrite> block; store as data attribute, strip from visible text
+            rewrite_match = re.search(r'<rewrite>(.*?)</rewrite>', assistant_reply, re.DOTALL | re.IGNORECASE)
+            if rewrite_match:
+                rewrite_text = rewrite_match.group(1).strip()
+                # Strip only the tags; keep the content visible in the chat bubble
+                clean_reply = re.sub(r'<rewrite>(.*?)</rewrite>', r'\1', assistant_reply, flags=re.DOTALL | re.IGNORECASE).strip()
+            else:
+                rewrite_text = None
+                clean_reply = assistant_reply
+
+            safe_full = escape(clean_reply).replace("\n", "<br>")
+            if rewrite_text:
+                # Encode newlines so they survive the HTML attribute
+                rewrite_attr_val = escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
+                rewrite_attr = f' data-rewrite="{rewrite_attr_val}"'
+            else:
+                rewrite_attr = ''
             wrapped = (
-                f'<div class="chat-msg assistant-msg" id="msg-{key}">'
+                f'<div class="chat-msg assistant-msg"{rewrite_attr} id="msg-{key}">'
                 f'<div class="msg-body">{safe_full}</div>'
-                f'<button class="copy-btn" '
-                f'aria-label="Copy this response to clipboard" '
-                f'onclick="navigator.clipboard.writeText(this.closest(\'.chat-msg\').querySelector(\'.msg-body\').innerText)">'
-                f'Copy</button></div>'
+                f'</div>'
             )
             wrapped_lines = "\n".join(f"data: {line}" for line in wrapped.splitlines())
             yield f"event: wrap\n{wrapped_lines}\n\n"

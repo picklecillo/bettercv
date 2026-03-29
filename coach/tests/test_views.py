@@ -159,15 +159,15 @@ class CoachStreamTests(TestCase):
         self.assertIn("assistant", roles)
         self.assertEqual(received_history[-1]["content"], "Make it shorter.")
 
-    def test_wrap_event_contains_copy_button_with_aria_label(self):
+    def test_wrap_event_contains_assistant_message(self):
         fake = _fake()
         nonce = self._setup_stream(fake)
         with patch("coach.views.get_coach_service", return_value=fake):
             response = self.client.get(f"/coach/stream/?key={nonce}")
             content = self._consume(response)
         self.assertIn("event: wrap", content)
-        self.assertIn("copy-btn", content)
-        self.assertIn("aria-label", content)
+        self.assertIn("assistant-msg", content)
+        self.assertIn("msg-body", content)
 
     def test_error_not_committed_to_history(self):
         from unittest.mock import MagicMock

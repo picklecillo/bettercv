@@ -192,7 +192,20 @@
     }
     .action-btn:hover { background-color: var(--ink-mid); }
     .action-btn:active { transform: translateY(1px); }
-    .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
+    .action-btn.htmx-request { opacity: 0.8; cursor: not-allowed; }
+    .action-btn.htmx-request .btn-text { display: none; }
+    .btn-spinner { display: none; }
+    .action-btn.htmx-request .btn-spinner {
+      display: inline-block;
+      width: 0.9em;
+      height: 0.9em;
+      border: 2px solid rgba(245,240,232,0.35);
+      border-top-color: var(--cream);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Error ── */
     .result-error {
@@ -256,7 +269,8 @@
 
         <div class="submit-row">
           <button id="submit-btn" type="submit" class="action-btn">
-            Start Coaching
+            <span class="btn-text">Start Coaching</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
           </button>
         </div>
 

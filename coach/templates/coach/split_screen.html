@@ -47,27 +47,13 @@
       flex-shrink: 0;
     }
 
-    /* ── Left: CV text ── */
-    .cv-text {
-      padding: 1.25rem 1.5rem;
-      font-size: 0.82rem;
-      line-height: 1.8;
-      color: var(--ink-mid);
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-y: auto;
-      flex: 1;
-    }
-
-    /* ── Right: experience list + chat ── */
-    .right-panel { display: flex; flex-direction: column; }
-
+    /* ── Left: WE list ── */
     .experience-list {
-      flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
+      flex: 1;
+      overflow-y: auto;
       padding: 0.75rem 1rem;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 0.5rem;
     }
 
@@ -75,7 +61,7 @@
       font-family: 'Outfit', sans-serif;
       font-size: 0.78rem;
       font-weight: 500;
-      padding: 0.4rem 0.875rem;
+      padding: 0.6rem 0.875rem;
       border: 1px solid var(--border);
       border-radius: 2px;
       background: var(--cream);
@@ -83,12 +69,70 @@
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
       text-align: left;
+      width: 100%;
     }
     .exp-btn:hover { border-color: var(--gold); background: var(--surface); }
     .exp-btn.selected { border-color: var(--gold); background: var(--gold); color: var(--ink); }
 
-    /* ── Chat area ── */
-    #chat-transcript {
+    /* ── Right panel ── */
+    .right-panel { display: flex; flex-direction: column; }
+
+    /* ── Description sections ── */
+    .we-description-panel {
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      max-height: 45%;
+      overflow-y: auto;
+    }
+
+    .we-section {
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1.5rem;
+    }
+    .we-section:last-child { border-bottom: none; }
+
+    .we-section-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .we-description-body {
+      font-size: 0.85rem;
+      line-height: 1.75;
+      color: var(--ink);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #we-updated-section .we-description-body {
+      background: var(--gold-lt);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+    }
+
+    /* ── Chat panes ── */
+    #chat-panes {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-pane {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .chat-transcript {
       flex: 1;
       overflow-y: auto;
       padding: 1.25rem 1.5rem;
@@ -259,57 +303,69 @@
 
   <div class="coach-grid">
 
-    <!-- Left: original CV -->
+    <!-- Left: work experience list -->
     <div class="panel">
-      <div class="panel-header">Your CV</div>
-      <div class="cv-text">{{ cv_text }}</div>
-    </div>
-
-    <!-- Right: experience list + chat -->
-    <div class="panel right-panel">
       <div class="panel-header">Work Experiences</div>
-
       <div class="experience-list">
         {% for exp in experiences %}
         <button
           class="exp-btn"
-          hx-post="/coach/chat/"
-          hx-target="#chat-transcript"
-          hx-swap="beforeend"
-          hx-vals='{"exp_index": "{{ forloop.counter0 }}"}'
-          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-          onclick="document.querySelectorAll('.exp-btn').forEach(b=>b.classList.remove('selected')); this.classList.add('selected'); document.getElementById('current-exp-index').value='{{ forloop.counter0 }}'; document.getElementById('chat-input-area').style.display='block';">
+          data-index="{{ forloop.counter0 }}"
+          data-description="{{ exp.original_description|escape }}"
+          onclick="selectExp({{ forloop.counter0 }}, this.dataset.description)">
           <strong>{{ exp.title }}</strong><br>
           <span style="opacity:0.7; font-size:0.72rem">{{ exp.company }} &middot; {{ exp.dates }}</span>
         </button>
         {% endfor %}
       </div>
+    </div>
 
-      <div id="chat-transcript">
-        <div class="chat-placeholder">Select a work experience to begin</div>
+    <!-- Right: description panels + per-WE chats -->
+    <div class="panel right-panel">
+      <div class="panel-header">Coach</div>
+
+      <!-- Description sections (shared, repopulated on WE switch) -->
+      <div class="we-description-panel">
+        <div id="we-original-section" class="we-section" style="display:none">
+          <div class="we-section-label">Current description</div>
+          <div id="we-original-body" class="we-description-body"></div>
+        </div>
+        <div id="we-updated-section" class="we-section" style="display:none">
+          <div class="we-section-label">
+            Updated description
+            <button class="copy-btn" onclick="copyUpdated()">Copy</button>
+          </div>
+          <div id="we-updated-body" class="we-description-body"></div>
+        </div>
       </div>
 
-      <!-- Chat input — hidden until an experience is selected -->
-      <div id="chat-input-area" style="display:none" class="chat-input-area">
-        <form id="chat-form"
-              hx-post="/coach/chat/"
-              hx-target="#chat-transcript"
-              hx-swap="beforeend"
-              hx-encoding="multipart/form-data"
-              hx-on::after-request="this.reset()">
-          {% csrf_token %}
-          <input type="hidden" name="exp_index" id="current-exp-index" value="">
-          <input type="hidden" name="is_followup" value="1">
-          <div class="chat-input-row">
-            <textarea
-              name="user_message"
-              class="chat-input"
-              rows="2"
-              placeholder="Reply to continue the conversation…"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
-            <button type="submit" class="send-btn">Send</button>
+      <!-- Per-WE chat panes -->
+      <div id="chat-panes">
+        {% for exp in experiences %}
+        <div id="chat-pane-{{ forloop.counter0 }}" class="chat-pane">
+          <div id="chat-transcript-{{ forloop.counter0 }}" class="chat-transcript"></div>
+          <div class="chat-input-area">
+            <form hx-post="/coach/chat/"
+                  hx-target="#chat-transcript-{{ forloop.counter0 }}"
+                  hx-swap="beforeend"
+                  hx-encoding="multipart/form-data"
+                  hx-on::after-request="this.reset()">
+              {% csrf_token %}
+              <input type="hidden" name="exp_index" value="{{ forloop.counter0 }}">
+              <input type="hidden" name="is_followup" value="1">
+              <div class="chat-input-row">
+                <textarea
+                  name="user_message"
+                  class="chat-input"
+                  rows="2"
+                  placeholder="Reply to continue the conversation…"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
+                <button type="submit" class="send-btn">Send</button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
+        {% endfor %}
       </div>
 
       <div class="start-over">
@@ -318,3 +374,97 @@
     </div>
 
   </div>
+
+  <script>
+    var weRewrites = {};      // exp_index -> latest rewrite text
+    var activeExpIdx = null;
+
+    function getCsrf() {
+      return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    function selectExp(idx, descr) {
+      // Update button selection
+      document.querySelectorAll('.exp-btn').forEach(function(b) { b.classList.remove('selected'); });
+      document.querySelector('.exp-btn[data-index="' + idx + '"]').classList.add('selected');
+
+      // Switch chat panes
+      document.querySelectorAll('.chat-pane').forEach(function(p) { p.style.display = 'none'; });
+      var pane = document.getElementById('chat-pane-' + idx);
+      pane.style.display = 'flex';
+
+      // Populate original description
+      document.getElementById('we-original-body').textContent = descr;
+      document.getElementById('we-original-section').style.display = 'block';
+
+      // Show/hide updated description for this WE
+      activeExpIdx = idx;
+      updateUpdatedSection(idx);
+
+      // Load initial chat once per WE
+      if (!pane.dataset.loaded) {
+        pane.dataset.loaded = '1';
+        var transcript = document.getElementById('chat-transcript-' + idx);
+        transcript.innerHTML = '<div class="chat-placeholder">Starting session<span class="dots">...</span></div>';
+        htmx.ajax('POST', '/coach/chat/', {
+          target: '#chat-transcript-' + idx,
+          swap: 'beforeend',
+          headers: { 'X-CSRFToken': getCsrf() },
+          values: { exp_index: String(idx) }
+        });
+      }
+    }
+
+    function updateUpdatedSection(idx) {
+      var rewrite = weRewrites[idx];
+      if (rewrite) {
+        document.getElementById('we-updated-body').textContent = rewrite;
+        document.getElementById('we-updated-section').style.display = 'block';
+      } else {
+        document.getElementById('we-updated-section').style.display = 'none';
+      }
+    }
+
+    function copyUpdated() {
+      var text = document.getElementById('we-updated-body').textContent;
+      navigator.clipboard.writeText(text);
+    }
+
+    // Watch for new assistant messages with a <rewrite> block
+    var _rewriteObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        mutation.addedNodes.forEach(function(node) {
+          if (node.nodeType !== 1) return;
+          var msgs = node.classList && node.classList.contains('assistant-msg')
+            ? [node]
+            : Array.from(node.querySelectorAll ? node.querySelectorAll('.assistant-msg') : []);
+          msgs.forEach(function(msg) {
+            if (msg.dataset.rewriteProcessed || !msg.dataset.rewrite) return;
+            msg.dataset.rewriteProcessed = '1';
+            var pane = msg.closest('.chat-pane');
+            if (!pane) return;
+            var idx = parseInt(pane.id.replace('chat-pane-', ''), 10);
+            weRewrites[idx] = msg.dataset.rewrite;
+            if (idx === activeExpIdx) updateUpdatedSection(idx);
+          });
+        });
+      });
+    });
+
+    var _panesEl = document.getElementById('chat-panes');
+    if (_panesEl) _rewriteObserver.observe(_panesEl, { childList: true, subtree: true });
+
+    // Scroll the active chat transcript to the bottom after every HTMX swap inside it
+    // and remove the "Starting session..." placeholder once real content arrives
+    document.addEventListener('htmx:afterSwap', function(e) {
+      var target = e.detail && e.detail.target;
+      if (!target) return;
+      var transcript = target.classList.contains('chat-transcript')
+        ? target
+        : target.closest('.chat-transcript');
+      if (!transcript) return;
+      var placeholder = transcript.querySelector('.chat-placeholder');
+      if (placeholder) placeholder.remove();
+      transcript.scrollTop = transcript.scrollHeight;
+    });
+  </script>
