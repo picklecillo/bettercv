@@ -11,6 +11,8 @@ COPY . .
 
 RUN export SECRET_KEY=build ANTHROPIC_API_KEY=fake-key-123 && uv run python manage.py collectstatic --noinput
 
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
-CMD ["uv", "run", "gunicorn", "ats_analyzer.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+CMD ["./entrypoint.sh"]

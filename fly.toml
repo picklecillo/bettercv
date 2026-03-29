@@ -21,10 +21,7 @@ primary_region = 'iad'
   destination = "/data"
 
 [processes]
-  app = "uv run gunicorn ats_analyzer.wsgi:application --bind 0.0.0.0:8000 --workers 1"
-
-[deploy]
-  release_command = "sh -c 'for i in 1 2 3 4 5; do uv run python manage.py migrate --noinput && exit 0; echo \"Retry $i...\"; sleep 5; done; exit 1'"
+  app = "./entrypoint.sh"
 
 [[services]]
   http_checks = []
