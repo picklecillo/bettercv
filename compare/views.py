@@ -70,37 +70,48 @@ def add_jd(request):
 
     jd_num = len(compare["jds"])
 
-    sse_container = (
-        f'<div class="analysis-card" id="card-{jd_id}">'
-        f'  <div class="card-top-bar streaming"></div>'
-        f'  <div class="card-header">'
-        f'    <span class="card-title">Job {jd_num}</span>'
-        f'  </div>'
-        f'  <div id="sse-wrap-{jd_id}"'
+    # Primary response: <tr> into #summary-tbody.
+    # HTMX wraps primary content in <template class="internal-htmx-wrapper"> before
+    # parsing, which preserves <tr> elements. insertNodesBefore then inserts the <tr>
+    # directly into <tbody> — this is the only reliable path for table rows in HTMX 2.
+    summary_row = (
+        f'<tr id="summary-row-{jd_id}">'
+        f'  <td>{jd_num}</td>'
+        f'  <td>—</td>'
+        f'  <td>—</td>'
+        f'  <td><span class="status-analyzing">Analyzing…</span></td>'
+        f'  <td></td>'
+        f'</tr>'
+    )
+
+    # OOB: analysis card into #jd-cards. div-into-div OOB works because <div> is not
+    # stripped when HTMX parses the response fragment.
+    # hx-ext="sse", sse-connect, and sse-close live on the outer card div so that the
+    # EventSource is not orphaned when the wrap event replaces #sse-wrap-{jd_id}.
+    # Without this, the done event can't close the connection (sse-close is gone),
+    # the first card's EventSource keeps reconnecting, and the second card's SSE
+    # extension is corrupted.
+    card_oob = (
+        f'<div hx-swap-oob="beforeend:#jd-cards">'
+        f'  <div class="analysis-card" id="card-{jd_id}"'
         f'       hx-ext="sse"'
         f'       sse-connect="/compare/stream/?key={nonce}"'
         f'       sse-close="done">'
-        f'    <div class="stream-status">Analyzing<span class="dots">...</span></div>'
-        f'    <div id="stream-out-{jd_id}" sse-swap="chunk" hx-swap="beforeend" class="stream-output"></div>'
-        f'    <div sse-swap="wrap" hx-target="#sse-wrap-{jd_id}" hx-swap="outerHTML"></div>'
-        f'    <div sse-swap="metadata" hx-target="#summary-row-{jd_id}" hx-swap="outerHTML"></div>'
+        f'    <div class="card-top-bar streaming"></div>'
+        f'    <div class="card-header">'
+        f'      <span class="card-title">Job {jd_num}</span>'
+        f'    </div>'
+        f'    <div id="sse-wrap-{jd_id}">'
+        f'      <div class="stream-status">Analyzing<span class="dots">...</span></div>'
+        f'      <div id="stream-out-{jd_id}" sse-swap="chunk" hx-swap="beforeend" class="stream-output"></div>'
+        f'      <div sse-swap="wrap" hx-target="#sse-wrap-{jd_id}" hx-swap="outerHTML"></div>'
+        f'      <div sse-swap="metadata" hx-target="#summary-row-{jd_id}" hx-swap="outerHTML"></div>'
+        f'    </div>'
         f'  </div>'
         f'</div>'
     )
 
-    summary_row_oob = (
-        f'<tbody hx-swap-oob="beforeend:#summary-tbody">'
-        f'  <tr id="summary-row-{jd_id}">'
-        f'    <td>{jd_num}</td>'
-        f'    <td>—</td>'
-        f'    <td>—</td>'
-        f'    <td><span class="status-analyzing">Analyzing…</span></td>'
-        f'    <td></td>'
-        f'  </tr>'
-        f'</tbody>'
-    )
-
-    return HttpResponse(sse_container + summary_row_oob, content_type="text/html")
+    return HttpResponse(summary_row + card_oob, content_type="text/html")
 
 
 @require_POST
@@ -160,7 +171,7 @@ def stream(request):
             # Extract metadata
             metadata_dict = None
             try:
-                meta = get_compare_service().extract_metadata(analysis_text)
+                meta = get_compare_service().extract_metadata(analysis_text, jd_text)
                 metadata_dict = {
                     "company": meta.company,
                     "title": meta.title,
@@ -176,13 +187,7 @@ def stream(request):
 
             request.session.save()
 
-            # wrap event: replace streaming container with rendered markdown
-            rendered = md.markdown(analysis_text, extensions=["tables"])
-            wrap_html = f'<div class="analysis-result">{rendered}</div>'
-            wrap_lines = "\n".join(f"data: {line}" for line in wrap_html.splitlines())
-            yield f"event: wrap\n{wrap_lines}\n\n"
-
-            # metadata event: update summary row
+            # metadata event: update summary row BEFORE wrap removes the listener
             remove_btn = (
                 f'<button class="remove-btn" '
                 f'hx-post="/compare/remove-jd/" '
@@ -203,6 +208,13 @@ def stream(request):
             )
             row_lines = "\n".join(f"data: {line}" for line in row_html.splitlines())
             yield f"event: metadata\n{row_lines}\n\n"
+
+            # wrap event: replace streaming container with rendered markdown
+            # (this removes the sse-swap listeners, so metadata must come first)
+            rendered = md.markdown(analysis_text, extensions=["tables"])
+            wrap_html = f'<div class="analysis-result">{rendered}</div>'
+            wrap_lines = "\n".join(f"data: {line}" for line in wrap_html.splitlines())
+            yield f"event: wrap\n{wrap_lines}\n\n"
 
         yield "event: done\ndata: \n\n"
 

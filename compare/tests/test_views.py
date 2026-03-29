@@ -87,7 +87,7 @@ class AddJdTests(TestCase):
         response = self._post_jd(FakeCompareService())
         content = response.content.decode()
         self.assertIn("hx-swap-oob", content)
-        self.assertIn("summary-tbody", content)
+        self.assertIn("summary-row-", content)
 
     def test_no_session_returns_error(self):
         with patch("compare.views.get_compare_service", return_value=FakeCompareService()):

@@ -20,7 +20,7 @@ class FakeCompareService(CompareService):
     def stream_analysis(self, resume_text: str, jd_text: str) -> Iterator[str]:
         yield "Strong match for this role."
 
-    def extract_metadata(self, analysis_text: str) -> JDMetadata:
+    def extract_metadata(self, analysis_text: str, jd_text: str = "") -> JDMetadata:
         if self._raise_metadata:
             raise self._raise_metadata
         return self._metadata

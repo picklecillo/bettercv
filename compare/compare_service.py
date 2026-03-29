@@ -61,8 +61,12 @@ _METADATA_TOOL = {
     },
 }
 
-_METADATA_PROMPT = """Here is a completed ATS analysis. Extract the company name, job title, and ATS score range.
+_METADATA_PROMPT = """Here is the job description followed by a completed ATS analysis. Extract the company name, job title, and ATS score range.
 
+Job description:
+{jd_text}
+
+ATS analysis:
 {analysis_text}"""
 
 
@@ -82,7 +86,7 @@ class CompareService:
         ) as s:
             yield from s.text_stream
 
-    def extract_metadata(self, analysis_text: str) -> JDMetadata:
+    def extract_metadata(self, analysis_text: str, jd_text: str = "") -> JDMetadata:
         response = self._client.messages.create(
             model=_MODEL,
             max_tokens=256,
@@ -90,6 +94,7 @@ class CompareService:
             tool_choice={"type": "tool", "name": "extract_jd_metadata"},
             messages=[{"role": "user", "content": _METADATA_PROMPT.format(
                 analysis_text=analysis_text,
+                jd_text=jd_text,
             )}],
         )
         tool_block = next(
