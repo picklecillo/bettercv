@@ -10,7 +10,7 @@ primary_region = 'iad'
   dockerfile = 'Dockerfile'
 
 [env]
-  DEBUG = 'True'
+  DEBUG = 'False'
   ENV = "production"
   PORT = '8000'
   ALLOWED_HOSTS = ".fly.dev"
