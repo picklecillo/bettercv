@@ -4,4 +4,4 @@ run:
 	uv run python manage.py runserver
 
 test:
-	uv run python manage.py test analyzer
+	uv run python manage.py test
