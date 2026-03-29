@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BetterCV is a Django + HTMX web app that analyzes how well a resume matches a job description using the Claude API. It streams structured ATS analysis back to the browser in real time. Stateless — no user accounts, no saved history.
+BetterCV is a Django + HTMX web app with three tools: ATS Analyzer, Resume Coach, and Multi-JD Compare. All use the Claude API with SSE streaming. Stateless — no user accounts, no saved history (DB-backed sessions via SQLite).
 
 ## Setup
 
@@ -20,7 +20,7 @@ make run                          # Start dev server at localhost:8000
 make test                         # Run full test suite
 uv run python manage.py migrate   # Apply migrations
 uv run python manage.py shell     # Django shell
-uv run python manage.py test analyzer.tests.test_claude  # Run a single test file
+uv run python manage.py test compare.tests.test_views    # Run a single test module
 ```
 
 ## Architecture
@@ -31,18 +31,22 @@ uv run python manage.py test analyzer.tests.test_claude  # Run a single test fil
 ├── manage.py
 ├── pyproject.toml                # uv project + dependencies
 ├── .env                          # ANTHROPIC_API_KEY (not committed)
-├── analyzer/                     # Main Django app
+├── analyzer/                     # ATS Analyzer app
 │   ├── views.py                  # Form view + /analyze/ endpoint
-│   ├── urls.py
 │   ├── claude.py                 # ClaudeService class + ClaudeServiceError
 │   ├── pdf.py                    # PDF extraction + PdfExtractionError
-│   └── templates/analyzer/
-│       └── index.html            # Single-page HTMX UI (daisyUI + Tailwind via CDN)
+│   └── templates/analyzer/index.html
 │   └── tests/
-│       ├── fakes.py              # FakeClaudeService (shared test double)
+│       ├── fakes.py              # FakeClaudeService
 │       ├── test_claude.py
 │       ├── test_pdf.py
 │       └── test_views.py
+├── coach/                        # Resume Coach app (multi-turn AI coaching)
+│   ├── coach_service.py          # CoachService: parse_cv() (tool use) + stream_reply()
+│   └── tests/fakes.py            # FakeCoachService
+├── compare/                      # Multi-JD Compare app (stream N analyses, summary table)
+│   ├── compare_service.py        # CompareService: stream_analysis() + extract_metadata() (tool use)
+│   └── tests/fakes.py            # FakeCompareService
 └── ats_analyzer/
     ├── settings.py               # Loads ANTHROPIC_API_KEY via python-dotenv
     └── urls.py
@@ -57,6 +61,10 @@ uv run python manage.py test analyzer.tests.test_claude  # Run a single test fil
 - **PDF input**: PDF upload takes priority over pasted text. `pdfplumber` extracts text; raises `PdfExtractionError` (not silent empty string) if the PDF is unreadable or image-based.
 - **Claude model**: `claude-sonnet-4-20250514`, max_tokens 2000. System prompt enforces a fixed 5-section markdown structure (ATS Score, Keyword Matches, Missing Keywords, Quick Wins, Overall Summary).
 - **Frontend**: daisyUI + Tailwind loaded via CDN in `index.html`. No build step. HTMX handles all interactivity; form uses `hx-encoding="multipart/form-data"` for file uploads.
+- **SSE + wrap pattern**: `hx-ext="sse"`, `sse-connect`, and `sse-close` must be on an outer element that survives content replacement. When a `wrap` SSE event replaces an inner container, it destroys all `sse-swap` listeners inside it — emit any remaining SSE events (e.g. `metadata`) *before* `wrap`. Without this, the `EventSource` is orphaned and corrupts SSE state for subsequent cards.
+- **OOB table rows (HTMX 2)**: `<tr>` elements cannot be reliably inserted via `hx-swap-oob` — they are stripped during fragment parsing. Make `<tr>` the *primary* swap target (`hx-target="#tbody-id"` + `hx-swap="beforeend"`); HTMX wraps primary content in `<template>` before parsing, which preserves table elements. Put other fragments in OOB `<div>` wrappers (div-into-div works fine).
+- **session.save() in generators**: Django's session middleware runs `process_response` *before* streaming content is consumed. Any session mutations inside a `StreamingHttpResponse` generator must call `request.session.save()` explicitly.
+- **Nonce pattern**: POST endpoints store `{jd_id, resume_text, jd_text, ...}` under `session[nonce]` (a UUID key). The stream GET endpoint pops the nonce before the generator starts — saved by middleware, preventing reuse even if the generator errors.
 
 ### Testing Patterns
 
@@ -72,14 +80,11 @@ uv run python manage.py test analyzer.tests.test_claude  # Run a single test fil
 - `markdown` — render Claude's markdown response to HTML
 - `python-dotenv` — load `ANTHROPIC_API_KEY` from `.env`
 
-## Implementation Plan
-
-Phases tracked in `plans/ats-analyzer-v1.md`. Current status: Phase 2 (batch analysis) complete.
-
 ## V2 Roadmap
 
-- Resume Coach: multi-turn interview to rewrite work experience items
-- Save analysis history (PostgreSQL)
-- Compare multiple JDs against one resume
+All plans tracked in `plans/`. All three features are complete (90 tests green).
+
+Remaining roadmap:
 - Export analysis as PDF
+- Save analysis history (PostgreSQL)
 - Deploy to Railway or Render
