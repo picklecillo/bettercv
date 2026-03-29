@@ -14,6 +14,11 @@ primary_region = 'iad'
   ENV = "production"
   PORT = '8000'
   ALLOWED_HOSTS = ".fly.dev"
+  DATABASE_PATH = "/data/db.sqlite3"
+
+[mounts]
+  source = "bettercv_data"
+  destination = "/data"
 
 [processes]
   app = "uv run gunicorn ats_analyzer.wsgi:application --bind 0.0.0.0:8000 --workers 1"
