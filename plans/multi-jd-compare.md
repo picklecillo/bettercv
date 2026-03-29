@@ -46,17 +46,17 @@ If no input is provided, or the PDF is unreadable, a styled error div is returne
 
 ### Acceptance criteria
 
-- [ ] `GET /compare/` returns 200 with a resume input form (paste + PDF upload)
-- [ ] `GET /compare/` clears any existing `session["compare"]`
-- [ ] `POST /compare/parse-resume/` with pasted text swaps `<main>` to the workspace
-- [ ] `POST /compare/parse-resume/` with a PDF extracts text and returns the same
-- [ ] PDF upload takes priority over pasted text when both are submitted
-- [ ] Submitting neither returns an error div
-- [ ] An unreadable PDF surfaces a `PdfExtractionError` as an error div
-- [ ] `session["compare"]["resume_text"]` is set after a successful parse
-- [ ] The workspace shows an empty summary table, an empty cards area, and a JD input form
-- [ ] Navigation header on all three tools includes a "Compare" link to `/compare/`
-- [ ] `compare` app routes are registered under `/compare/` and do not touch existing routes
+- [x] `GET /compare/` returns 200 with a resume input form (paste + PDF upload)
+- [x] `GET /compare/` clears any existing `session["compare"]`
+- [x] `POST /compare/parse-resume/` with pasted text swaps `<main>` to the workspace
+- [x] `POST /compare/parse-resume/` with a PDF extracts text and returns the same
+- [x] PDF upload takes priority over pasted text when both are submitted
+- [x] Submitting neither returns an error div
+- [x] An unreadable PDF surfaces a `PdfExtractionError` as an error div
+- [x] `session["compare"]["resume_text"]` is set after a successful parse
+- [x] The workspace shows an empty summary table, an empty cards area, and a JD input form
+- [x] Navigation header on all three tools includes a "Compare" link to `/compare/`
+- [x] `compare` app routes are registered under `/compare/` and do not touch existing routes
 
 ---
 
@@ -74,20 +74,20 @@ If no input is provided, or the PDF is unreadable, a styled error div is returne
 
 ### Acceptance criteria
 
-- [ ] `POST /compare/add-jd/` with a JD returns a summary table row and an analysis card with SSE container
-- [ ] `POST /compare/add-jd/` with no resume in session returns an error div
-- [ ] `POST /compare/add-jd/` with missing JD text returns an error div
-- [ ] The summary table row shows "Analyzing…" while the stream is active
-- [ ] Analysis text streams into the card word by word via SSE `chunk` events
-- [ ] After streaming, `extract_metadata()` is called and a `metadata` SSE event is emitted
-- [ ] The summary table row updates to show `company · title` and ATS score range on metadata success
-- [ ] On metadata failure, the row shows `—` and the analysis card still renders
-- [ ] `session["compare"]["jds"][jd_id]` contains `analysis` and `metadata` after a successful stream
-- [ ] Errored streams are not committed to session
-- [ ] Missing or expired nonce returns 400
-- [ ] `CompareService.stream_analysis()` is tested: chunks yielded, resume + JD text passed to API
-- [ ] `CompareService.extract_metadata()` is tested: valid analysis returns `JDMetadata`, missing tool use block raises `CompareMetadataError`
-- [ ] View tests cover: successful add+stream+metadata cycle, metadata failure, stream error
+- [x] `POST /compare/add-jd/` with a JD returns a summary table row and an analysis card with SSE container
+- [x] `POST /compare/add-jd/` with no resume in session returns an error div
+- [x] `POST /compare/add-jd/` with missing JD text returns an error div
+- [x] The summary table row shows "Analyzing…" while the stream is active
+- [x] Analysis text streams into the card word by word via SSE `chunk` events
+- [x] After streaming, `extract_metadata()` is called and a `metadata` SSE event is emitted
+- [x] The summary table row updates to show `company · title` and ATS score range on metadata success
+- [x] On metadata failure, the row shows `—` and the analysis card still renders
+- [x] `session["compare"]["jds"][jd_id]` contains `analysis` and `metadata` after a successful stream
+- [x] Errored streams are not committed to session
+- [x] Missing or expired nonce returns 400
+- [x] `CompareService.stream_analysis()` is tested: chunks yielded, resume + JD text passed to API
+- [x] `CompareService.extract_metadata()` is tested: valid analysis returns `JDMetadata`, missing tool use block raises `CompareMetadataError`
+- [x] View tests cover: successful add+stream+metadata cycle, metadata failure, stream error
 
 ---
 
@@ -103,10 +103,10 @@ If no input is provided, or the PDF is unreadable, a styled error div is returne
 
 ### Acceptance criteria
 
-- [ ] `POST /compare/remove-jd/` with a valid `jd_id` removes the slot from session and returns 200
-- [ ] `POST /compare/remove-jd/` with an unknown `jd_id` returns 400
+- [x] `POST /compare/remove-jd/` with a valid `jd_id` removes the slot from session and returns 200
+- [x] `POST /compare/remove-jd/` with an unknown `jd_id` returns 400
 - [ ] Removing a JD removes its card and summary table row from the DOM
 - [ ] Removing one JD does not affect any other JD's card or table row
-- [ ] `POST /compare/add-jd/` with 10 JDs already present returns an error div
-- [ ] Adding an 11th JD does not create a session slot
-- [ ] View tests cover: successful remove, unknown jd_id, limit enforcement
+- [x] `POST /compare/add-jd/` with 10 JDs already present returns an error div
+- [x] Adding an 11th JD does not create a session slot
+- [x] View tests cover: successful remove, unknown jd_id, limit enforcement
