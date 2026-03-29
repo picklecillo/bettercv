@@ -76,7 +76,7 @@ def add_jd(request):
     # parsing, which preserves <tr> elements. insertNodesBefore then inserts the <tr>
     # directly into <tbody> — this is the only reliable path for table rows in HTMX 2.
     summary_row = (
-        f'<tr id="summary-row-{jd_id}">'
+        f'<tr id="summary-row-{jd_id}" data-score-high="-1">'
         f'  <td>{jd_num}</td>'
         f'  <td>—</td>'
         f'  <td>—</td>'
@@ -175,6 +175,7 @@ def stream(request):
 
             # Extract metadata
             metadata_dict = None
+            score_high_val = -1
             try:
                 meta = get_compare_service().extract_metadata(analysis_text, jd_text)
                 metadata_dict = {
@@ -183,6 +184,7 @@ def stream(request):
                     "score_low": meta.score_low,
                     "score_high": meta.score_high,
                 }
+                score_high_val = meta.score_high
                 compare["jds"][jd_id]["metadata"] = metadata_dict
                 label = f"{escape(meta.company)} · {escape(meta.title)}"
                 score = f"{meta.score_low}–{meta.score_high} / 100"
@@ -204,10 +206,13 @@ def stream(request):
                 f'Remove</button>'
             )
             row_html = (
-                f'<tr id="summary-row-{jd_id}">'
+                f'<tr id="summary-row-{jd_id}" data-score-high="{score_high_val}">'
                 f'<td>{jd_num}</td>'
                 f'<td>{escape(label)}</td>'
-                f'<td><span class="score-badge">{escape(score)}</span></td>'
+                f'<td>'
+                f'<span class="score-badge">{escape(score)}</span>'
+                f'<span class="best-star" aria-label="Best score">★</span>'
+                f'</td>'
                 f'<td>Done</td>'
                 f'<td>{remove_btn}</td>'
                 f'</tr>'

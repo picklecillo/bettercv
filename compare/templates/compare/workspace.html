@@ -189,6 +189,16 @@
       color: var(--ink-mid);
     }
 
+    .best-star {
+      margin-left: 0.4rem;
+      font-size: 0.9rem;
+      visibility: hidden;
+      color: var(--gold);
+    }
+
+    #summary-tbody tr[id^="summary-row-"] { cursor: pointer; }
+    #summary-tbody tr[id^="summary-row-"]:hover td { background: var(--gold-lt) !important; }
+
     .remove-btn {
       font-family: 'Outfit', sans-serif;
       font-size: 0.7rem;
@@ -367,3 +377,33 @@
     </div>
 
   </div>
+
+  <script>
+    // ── Clickable rows: scroll to analysis card ──
+    document.getElementById('summary-tbody').addEventListener('click', function(e) {
+      const row = e.target.closest('tr[id^="summary-row-"]');
+      if (!row || e.target.closest('button')) return;
+      const jdId = row.id.replace('summary-row-', '');
+      const card = document.getElementById('card-' + jdId);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // ── Star icon: highlight row(s) with highest score_high ──
+    function updateBestStar() {
+      const rows = document.querySelectorAll('#summary-tbody tr[data-score-high]');
+      let best = -1;
+      rows.forEach(function(r) {
+        const h = parseInt(r.dataset.scoreHigh, 10);
+        if (h > best) best = h;
+      });
+      rows.forEach(function(r) {
+        const star = r.querySelector('.best-star');
+        if (!star) return;
+        const h = parseInt(r.dataset.scoreHigh, 10);
+        star.style.visibility = (best >= 0 && h === best) ? 'visible' : 'hidden';
+      });
+    }
+
+    const _starObserver = new MutationObserver(updateBestStar);
+    _starObserver.observe(document.getElementById('summary-tbody'), { childList: true, subtree: true });
+  </script>
