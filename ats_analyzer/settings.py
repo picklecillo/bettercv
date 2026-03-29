@@ -11,8 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from logging import config as logging_config
 
 import environ
+
+from .logging import LOGGING
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,6 +79,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ats_analyzer.wsgi.application'
 
+# Logging
+LOGGING_CONFIG = None  # Needed to use `logging.config.dictConfig` manually
+logging_config.dictConfig(LOGGING)
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -122,9 +128,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
+
+STATICFILES_DIRS = [BASE_DIR / "common_static"]
+
+MEDIA_URL = env("MEDIA_URL", default="/media/")
+MEDIA_ROOT = env("MEDIA_ROOT", default=BASE_DIR / "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
