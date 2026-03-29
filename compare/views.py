@@ -61,14 +61,15 @@ def add_jd(request):
     compare["jds"][jd_id] = {"jd_text": jd_text, "analysis": None, "metadata": None}
     request.session.modified = True
 
+    jd_num = len(compare["jds"])
+
     request.session[nonce] = {
         "jd_id": jd_id,
+        "jd_num": jd_num,
         "resume_text": compare["resume_text"],
         "jd_text": jd_text,
     }
     request.session.modified = True
-
-    jd_num = len(compare["jds"])
 
     # Primary response: <tr> into #summary-tbody.
     # HTMX wraps primary content in <template class="internal-htmx-wrapper"> before
@@ -146,6 +147,7 @@ def stream(request):
         return HttpResponse("Compare session expired. Please re-upload your resume.", status=400)
 
     jd_id = nonce_data["jd_id"]
+    jd_num = nonce_data["jd_num"]
     resume_text = nonce_data["resume_text"]
     jd_text = nonce_data["jd_text"]
 
@@ -203,6 +205,7 @@ def stream(request):
             )
             row_html = (
                 f'<tr id="summary-row-{jd_id}">'
+                f'<td>{jd_num}</td>'
                 f'<td>{escape(label)}</td>'
                 f'<td><span class="score-badge">{escape(score)}</span></td>'
                 f'<td>Done</td>'
