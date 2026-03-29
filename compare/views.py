@@ -36,12 +36,18 @@ def parse_resume(request):
         if not resume_text:
             return _error("Please provide your resume (text or PDF).")
 
-    request.session["compare"] = {
-        "resume_text": resume_text,
-        "jds": {},
-    }
+    try:
+        request.session["compare"] = {
+            "resume_text": resume_text,
+            "jds": {},
+        }
+    except Exception as e:
+        return _error(str(e))
 
-    return render(request, "compare/workspace.html", {"resume_text": resume_text})
+    try:
+        return render(request, "compare/workspace.html", {"resume_text": resume_text})
+    except Exception as e:
+        return _error(str(e))
 
 
 @require_POST
