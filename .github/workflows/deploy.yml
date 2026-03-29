@@ -18,9 +18,12 @@ jobs:
         run: uv sync --frozen
 
       - name: Run tests
-        run: uv run python manage.py test
+        run: mak test
         env:
+          DEBUG: 0
           ANTHROPIC_API_KEY: "test-key"
+          SECRET_KEY: ci-secret-key-not-used-in-production
+          ALLOWED_HOSTS: localhost,127.0.0.1
 
   deploy:
     needs: test
