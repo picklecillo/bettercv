@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BetterCV is a Django + HTMX web app with three tools: ATS Analyzer, Resume Coach, and Multi-JD Compare. All use the Claude API with SSE streaming. Stateless — no user accounts, no saved history (DB-backed sessions via SQLite).
+BetterCV is a Django + HTMX web app with four tools: ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer. All use the Claude API with SSE streaming. Stateless — no user accounts, no saved history (DB-backed sessions via SQLite).
 
 ## Setup
 
@@ -16,11 +16,11 @@ cp .env.example .env              # Then fill in ANTHROPIC_API_KEY
 ## Common Commands
 
 ```bash
-make run                          # Start dev server at localhost:8000
-make test                         # Run full test suite
-uv run python manage.py migrate   # Apply migrations
-uv run python manage.py shell     # Django shell
-uv run python manage.py test compare.tests.test_views    # Run a single test module
+make run                                                       # Start dev server at localhost:8000
+make test                                                      # Run full test suite
+uv run python manage.py migrate                                # Apply migrations
+uv run python manage.py shell                                  # Django shell
+uv run python manage.py test apps.writer.tests.test_views      # Run a single test module (note apps. prefix)
 ```
 
 ## Architecture
@@ -31,6 +31,9 @@ uv run python manage.py test compare.tests.test_views    # Run a single test mod
 ├── manage.py
 ├── pyproject.toml                # uv project + dependencies
 ├── .env                          # ANTHROPIC_API_KEY (not committed)
+├── shared/                       # Cross-cutting utilities
+│   ├── pdf.py                    # extract_text_from_pdf() + PdfExtractionError (moved from analyzer)
+│   └── session.py                # get_shared_resume()
 ├── analyzer/                     # ATS Analyzer app
 │   ├── views.py                  # Form view + /analyze/ endpoint
 │   ├── claude.py                 # ClaudeService class + ClaudeServiceError
@@ -47,6 +50,11 @@ uv run python manage.py test compare.tests.test_views    # Run a single test mod
 ├── compare/                      # Multi-JD Compare app (stream N analyses, summary table)
 │   ├── compare_service.py        # CompareService: stream_analysis() + extract_metadata() (tool use)
 │   └── tests/fakes.py            # FakeCompareService
+├── writer/                       # Resume Writer app (SSE YAML stream + rendercv PDF/HTML)
+│   ├── views.py                  # index, parse, stream, build, render_preview
+│   ├── writer_service.py         # WriterService: stream_yaml() with assistant prefill
+│   ├── rendercv_builder.py       # RenderCVBuilder: build_pdf() + render_html() via subprocess
+│   └── tests/fakes.py            # FakeRenderCVBuilder
 └── ats_analyzer/
     ├── settings.py               # Loads ANTHROPIC_API_KEY via python-dotenv
     └── urls.py
@@ -65,6 +73,11 @@ uv run python manage.py test compare.tests.test_views    # Run a single test mod
 - **OOB table rows (HTMX 2)**: `<tr>` elements cannot be reliably inserted via `hx-swap-oob` — they are stripped during fragment parsing. Make `<tr>` the *primary* swap target (`hx-target="#tbody-id"` + `hx-swap="beforeend"`); HTMX wraps primary content in `<template>` before parsing, which preserves table elements. Put other fragments in OOB `<div>` wrappers (div-into-div works fine).
 - **session.save() in generators**: Django's session middleware runs `process_response` *before* streaming content is consumed. Any session mutations inside a `StreamingHttpResponse` generator must call `request.session.save()` explicitly.
 - **Nonce pattern**: POST endpoints store `{jd_id, resume_text, jd_text, ...}` under `session[nonce]` (a UUID key). The stream GET endpoint pops the nonce before the generator starts — saved by middleware, preventing reuse even if the generator errors.
+- **rendercv output paths**: rendercv names output files after `cv.name` in the YAML, not the input filename. Always pass `--pdf-path out.pdf` and `--html-path out.html` to get predictable paths.
+- **rendercv HTML requires markdown**: `--dont-generate-markdown` also silently disables HTML. For HTML-only: use `--dont-generate-typst --dont-generate-pdf --dont-generate-png`.
+- **rendercv errors go to stdout**: rendercv uses `rich` and prints validation errors to stdout, not stderr. Capture both: `result.stderr.strip() or result.stdout.strip()`.
+- **Anthropic prefill trailing whitespace**: Assistant prefill content must not end with whitespace — `"cv:\n"` is rejected with a 400. Use `"cv:"` and let Claude's first token supply the newline.
+- **SSE error + follow-up action**: If an SSE error event is followed immediately by a `done` event that triggers a fetch, the fetch's error will overwrite the SSE error in the UI. Track a `hadStreamError` flag and skip the follow-up action if set.
 
 ### Testing Patterns
 
@@ -79,10 +92,11 @@ uv run python manage.py test compare.tests.test_views    # Run a single test mod
 - `pdfplumber` — PDF text extraction
 - `markdown` — render Claude's markdown response to HTML
 - `python-dotenv` — load `ANTHROPIC_API_KEY` from `.env`
+- `rendercv[full]` — PDF/HTML generation (requires Python ≥ 3.12, uses Typst, no system libs needed)
 
 ## V2 Roadmap
 
-All plans tracked in `plans/`. All three features are complete (90 tests green).
+All plans tracked in `plans/`. All four features are complete (153 tests green).
 
 Remaining roadmap:
 - Export analysis as PDF
