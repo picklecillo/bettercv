@@ -1,0 +1,139 @@
+<style type="text/tailwindcss">
+  .yaml-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.75rem; box-shadow: 0 1px 3px rgba(26,26,46,0.06); }
+  .yaml-accent-bar { height: 3px; background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 100%); border-radius: 4px 4px 0 0; margin: -1.75rem -1.75rem 1.25rem; }
+  .yaml-accent-bar.streaming { background: linear-gradient(90deg, var(--ink) 0%, var(--gold) 50%, var(--ink) 100%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  .stream-status { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+  .dots { display: inline-block; animation: blink 1.2s step-start infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .yaml-textarea { width: 100%; background: var(--cream); border: 1px solid var(--border); border-radius: 3px; padding: 0.875rem 1rem; font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace; font-size: 0.8rem; line-height: 1.6; color: var(--ink); resize: vertical; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+  .yaml-textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+
+  .action-btn { background-color: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.85rem 2rem; border: none; border-radius: 3px; cursor: pointer; transition: background-color 0.15s, transform 0.1s; }
+  .action-btn:hover:not(:disabled) { background-color: var(--ink-mid); }
+  .action-btn:active:not(:disabled) { transform: translateY(1px); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn.loading { opacity: 0.6; cursor: not-allowed; }
+
+  .secondary-btn { background-color: transparent; color: var(--ink-mid); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.85rem 2rem; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .secondary-btn:hover:not(:disabled) { border-color: var(--ink-mid); color: var(--ink); }
+  .secondary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .result-error { border-left: 3px solid #e53e3e; background: #fff5f5; color: #742a2a; padding: 1rem 1.25rem; border-radius: 2px; font-size: 0.875rem; margin-top: 1rem; }
+</style>
+
+<div id="sse-container-{{ nonce }}"
+     hx-ext="sse"
+     sse-connect="/writer/stream/?key={{ nonce }}"
+     sse-close="done">
+
+  <div class="yaml-card">
+    <div id="yaml-accent-bar" class="yaml-accent-bar streaming"></div>
+
+    <div id="stream-status-{{ nonce }}" class="stream-status">
+      Converting resume<span class="dots">...</span>
+    </div>
+
+    <textarea
+      id="yaml-output"
+      name="yaml_content"
+      class="yaml-textarea"
+      rows="28"
+      placeholder="Generated YAML will appear here…"
+      spellcheck="false"></textarea>
+
+    <div id="build-error"></div>
+
+    <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+      <button id="build-btn"
+              class="action-btn"
+              disabled
+              hx-post="/writer/build/"
+              hx-swap="none"
+              hx-include="#yaml-output"
+              hx-encoding="application/x-www-form-urlencoded">
+        Build PDF
+      </button>
+
+      <button id="yaml-download-btn"
+              class="secondary-btn"
+              disabled>
+        Download YAML
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const container = document.getElementById('sse-container-{{ nonce }}');
+  const textarea  = document.getElementById('yaml-output');
+  const buildBtn  = document.getElementById('build-btn');
+  const yamlBtn   = document.getElementById('yaml-download-btn');
+  const statusEl  = document.getElementById('stream-status-{{ nonce }}');
+  const accentBar = document.getElementById('yaml-accent-bar');
+  const errorDiv  = document.getElementById('build-error');
+
+  // Accumulate YAML chunks into the textarea
+  container.addEventListener('htmx:sseMessage', function (e) {
+    if (e.detail.type === 'chunk') {
+      textarea.value += e.detail.data;
+    }
+    if (e.detail.type === 'error') {
+      errorDiv.innerHTML = '<div class="result-error">Conversion error: ' + e.detail.data + '</div>';
+    }
+    if (e.detail.type === 'done') {
+      statusEl.style.display = 'none';
+      accentBar.classList.remove('streaming');
+      buildBtn.disabled = false;
+      yamlBtn.disabled = false;
+    }
+  });
+
+  // Download YAML as a file (client-side only)
+  yamlBtn.addEventListener('click', function () {
+    const blob = new Blob([textarea.value], { type: 'application/x-yaml' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'resume.yaml';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Handle PDF build response: binary download on 200, error injection on 422
+  container.addEventListener('htmx:configRequest', function (e) {
+    if (e.detail.elt === buildBtn) {
+      e.detail.xhr.responseType = 'arraybuffer';
+    }
+  });
+
+  container.addEventListener('htmx:afterRequest', function (e) {
+    if (e.detail.elt !== buildBtn) return;
+    buildBtn.classList.remove('loading');
+    const xhr = e.detail.xhr;
+    if (xhr.status === 200) {
+      const blob = new Blob([xhr.response], { type: 'application/pdf' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'resume.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (xhr.status === 422) {
+      const text = new TextDecoder().decode(new Uint8Array(xhr.response));
+      errorDiv.innerHTML = text;
+    }
+  });
+
+  container.addEventListener('htmx:beforeRequest', function (e) {
+    if (e.detail.elt === buildBtn) {
+      buildBtn.classList.add('loading');
+      errorDiv.innerHTML = '';
+    }
+  });
+}());
+</script>

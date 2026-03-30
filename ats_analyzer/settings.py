@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'coach',
     'compare',
     'home',
+    'writer',
 ]
 
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")

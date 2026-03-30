@@ -23,4 +23,5 @@ urlpatterns = [
     path('analyzer/', include('analyzer.urls')),
     path('coach/', include('coach.urls')),
     path('compare/', include('compare.urls')),
+    path('writer/', include('writer.urls')),
 ]
