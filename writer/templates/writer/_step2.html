@@ -44,16 +44,17 @@
       placeholder="Generated YAML will appear here…"
       spellcheck="false"></textarea>
 
+    {# Proxy elements so the SSE extension registers EventSource listeners for these event types. #}
+    {# htmx:sseBeforeMessage fires before swap; we cancel it and handle the data ourselves.    #}
+    <div id="chunk-proxy-{{ nonce }}" sse-swap="chunk" style="display:none"></div>
+    <div id="error-proxy-{{ nonce }}" sse-swap="error" style="display:none"></div>
+
     <div id="build-error"></div>
 
     <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
       <button id="build-btn"
               class="action-btn"
-              disabled
-              hx-post="/writer/build/"
-              hx-swap="none"
-              hx-include="#yaml-output"
-              hx-encoding="application/x-www-form-urlencoded">
+              disabled>
         Build PDF
       </button>
 
@@ -69,28 +70,34 @@
 
 <script>
 (function () {
-  const container = document.getElementById('sse-container-{{ nonce }}');
-  const textarea  = document.getElementById('yaml-output');
-  const buildBtn  = document.getElementById('build-btn');
-  const yamlBtn   = document.getElementById('yaml-download-btn');
-  const statusEl  = document.getElementById('stream-status-{{ nonce }}');
-  const accentBar = document.getElementById('yaml-accent-bar');
-  const errorDiv  = document.getElementById('build-error');
+  const container   = document.getElementById('sse-container-{{ nonce }}');
+  const chunkProxy  = document.getElementById('chunk-proxy-{{ nonce }}');
+  const errorProxy  = document.getElementById('error-proxy-{{ nonce }}');
+  const textarea    = document.getElementById('yaml-output');
+  const buildBtn    = document.getElementById('build-btn');
+  const yamlBtn     = document.getElementById('yaml-download-btn');
+  const statusEl    = document.getElementById('stream-status-{{ nonce }}');
+  const accentBar   = document.getElementById('yaml-accent-bar');
+  const errorDiv    = document.getElementById('build-error');
 
-  // Accumulate YAML chunks into the textarea
-  container.addEventListener('htmx:sseMessage', function (e) {
-    if (e.detail.type === 'chunk') {
-      textarea.value += e.detail.data;
-    }
-    if (e.detail.type === 'error') {
-      errorDiv.innerHTML = '<div class="result-error">Conversion error: ' + e.detail.data + '</div>';
-    }
-    if (e.detail.type === 'done') {
-      statusEl.style.display = 'none';
-      accentBar.classList.remove('streaming');
-      buildBtn.disabled = false;
-      yamlBtn.disabled = false;
-    }
+  // Intercept chunk events before HTMX can swap them; accumulate into textarea instead.
+  chunkProxy.addEventListener('htmx:sseBeforeMessage', function (e) {
+    e.preventDefault();
+    textarea.value += e.detail.data;
+  });
+
+  // Intercept error events before HTMX can swap them; show inline error.
+  errorProxy.addEventListener('htmx:sseBeforeMessage', function (e) {
+    e.preventDefault();
+    errorDiv.innerHTML = '<div class="result-error">Conversion error: ' + e.detail.data + '</div>';
+  });
+
+  // htmx:sseClose fires on the sse-connect element when the stream ends (sse-close="done").
+  container.addEventListener('htmx:sseClose', function () {
+    statusEl.style.display = 'none';
+    accentBar.classList.remove('streaming');
+    buildBtn.disabled = false;
+    yamlBtn.disabled = false;
   });
 
   // Download YAML as a file (client-side only)
@@ -104,36 +111,42 @@
     URL.revokeObjectURL(url);
   });
 
-  // Handle PDF build response: binary download on 200, error injection on 422
-  container.addEventListener('htmx:configRequest', function (e) {
-    if (e.detail.elt === buildBtn) {
-      e.detail.xhr.responseType = 'arraybuffer';
-    }
-  });
+  // Build PDF via fetch so we get a clean binary Blob (HTMX corrupts arraybuffer responses).
+  buildBtn.addEventListener('click', function () {
+    buildBtn.disabled = true;
+    buildBtn.classList.add('loading');
+    errorDiv.innerHTML = '';
 
-  container.addEventListener('htmx:afterRequest', function (e) {
-    if (e.detail.elt !== buildBtn) return;
-    buildBtn.classList.remove('loading');
-    const xhr = e.detail.xhr;
-    if (xhr.status === 200) {
-      const blob = new Blob([xhr.response], { type: 'application/pdf' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = 'resume.pdf';
-      a.click();
-      URL.revokeObjectURL(url);
-    } else if (xhr.status === 422) {
-      const text = new TextDecoder().decode(new Uint8Array(xhr.response));
-      errorDiv.innerHTML = text;
-    }
-  });
-
-  container.addEventListener('htmx:beforeRequest', function (e) {
-    if (e.detail.elt === buildBtn) {
-      buildBtn.classList.add('loading');
-      errorDiv.innerHTML = '';
-    }
+    fetch('/writer/build/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: new URLSearchParams({ yaml_content: textarea.value }),
+    })
+    .then(function (response) {
+      if (response.ok) {
+        return response.blob().then(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const a   = document.createElement('a');
+          a.href     = url;
+          a.download = 'resume.pdf';
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
+      return response.text().then(function (html) {
+        errorDiv.innerHTML = html;
+      });
+    })
+    .catch(function (err) {
+      errorDiv.innerHTML = '<div class="result-error">Network error: ' + err.message + '</div>';
+    })
+    .finally(function () {
+      buildBtn.disabled = false;
+      buildBtn.classList.remove('loading');
+    });
   });
 }());
 </script>
