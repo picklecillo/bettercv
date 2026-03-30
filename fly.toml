@@ -15,6 +15,7 @@ primary_region = 'iad'
   PORT = '8000'
   ALLOWED_HOSTS = ".fly.dev"
   DATABASE_PATH = "/data/db.sqlite3"
+  DJANGO_SETTINGS_MODULE = "ats_analyzer.settings.production"
 
 [mounts]
   source = "bettercv_data"
