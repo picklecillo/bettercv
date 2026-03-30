@@ -68,6 +68,43 @@ class CompareParseResumeTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn(b"result-error", response.content)
 
+    def test_parse_records_shared_resume_version(self):
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "r", "resume_filename": None, "version": 2}
+        session.save()
+        self.client.post("/compare/parse-resume/", {"resume_text": "My resume"})
+        self.assertEqual(self.client.session["compare"]["resume_version"], 2)
+
+
+class CompareWorkspaceTests(TestCase):
+
+    def test_redirects_to_index_when_no_session(self):
+        response = self.client.get("/compare/workspace/")
+        self.assertRedirects(response, "/compare/", fetch_redirect_response=False)
+
+    def test_returns_200_with_session(self):
+        _seed_compare_session(self.client)
+        response = self.client.get("/compare/workspace/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_stale_banner_present_when_version_mismatch(self):
+        _seed_compare_session(self.client)
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "new", "resume_filename": None, "version": 2}
+        session["compare"]["resume_version"] = 1
+        session.save()
+        response = self.client.get("/compare/workspace/")
+        self.assertContains(response, "resume has changed")
+
+    def test_stale_banner_absent_when_versions_match(self):
+        _seed_compare_session(self.client)
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "r", "resume_filename": None, "version": 1}
+        session["compare"]["resume_version"] = 1
+        session.save()
+        response = self.client.get("/compare/workspace/")
+        self.assertNotContains(response, "resume has changed")
+
 
 class AddJdTests(TestCase):
 

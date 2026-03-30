@@ -1,11 +1,12 @@
 import uuid
 
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from analyzer.pdf import PdfExtractionError, extract_text_from_pdf
+from shared.session import get_resume_version, get_shared_resume
 from .compare_service import CompareMetadataError, get_compare_service
 
 
@@ -17,9 +18,33 @@ def _error(message: str, status: int = 400) -> HttpResponse:
     )
 
 
+def _is_stale(session, compare_session: dict) -> bool:
+    shared_version = get_resume_version(session)
+    if shared_version is None:
+        return False
+    tool_version = compare_session.get("resume_version")
+    if tool_version is None:
+        return False
+    return shared_version > tool_version
+
+
 def index(request):
     request.session.pop("compare", None)
-    return render(request, "compare/index.html")
+    shared = get_shared_resume(request.session)
+    return render(request, "compare/index.html", {"shared_resume": shared})
+
+
+def workspace(request):
+    compare = request.session.get("compare")
+    if not compare:
+        return HttpResponseRedirect("/compare/")
+    shared = get_shared_resume(request.session)
+    stale_resume = _is_stale(request.session, compare)
+    return render(request, "compare/workspace.html", {
+        "resume_text": compare["resume_text"],
+        "stale_resume": stale_resume,
+        "shared_resume": shared,
+    })
 
 
 @require_POST
@@ -37,15 +62,22 @@ def parse_resume(request):
             return _error("Please provide your resume (text or PDF).")
 
     try:
+        resume_version = get_resume_version(request.session)
         request.session["compare"] = {
             "resume_text": resume_text,
             "jds": {},
+            "resume_version": resume_version,
         }
     except Exception as e:
         return _error(str(e))
 
     try:
-        return render(request, "compare/workspace.html", {"resume_text": resume_text})
+        shared = get_shared_resume(request.session)
+        return render(request, "compare/workspace.html", {
+            "resume_text": resume_text,
+            "stale_resume": False,
+            "shared_resume": shared,
+        })
     except Exception as e:
         return _error(str(e))
 
