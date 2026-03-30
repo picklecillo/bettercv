@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="coach-index"),
+    path("workspace/", views.workspace, name="coach-workspace"),
     path("parse/", views.parse, name="coach-parse"),
     path("chat/", views.chat, name="coach-chat"),
     path("stream/", views.stream, name="coach-stream"),

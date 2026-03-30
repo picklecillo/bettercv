@@ -2,12 +2,13 @@ import dataclasses
 import re
 import uuid
 
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
 
 from analyzer.pdf import PdfExtractionError, extract_text_from_pdf
+from shared.session import get_resume_version, get_shared_resume
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 
 
@@ -26,9 +27,35 @@ def _experiences_from_session(session) -> list[WorkExperience] | None:
     return [WorkExperience(**e) for e in coach["experiences"]]
 
 
+def _is_stale(session, coach_session: dict) -> bool:
+    shared_version = get_resume_version(session)
+    if shared_version is None:
+        return False
+    tool_version = coach_session.get("resume_version")
+    if tool_version is None:
+        return False
+    return shared_version > tool_version
+
+
 def index(request):
     request.session.pop("coach", None)
-    return render(request, "coach/index.html")
+    shared = get_shared_resume(request.session)
+    return render(request, "coach/index.html", {"shared_resume": shared})
+
+
+def workspace(request):
+    coach = request.session.get("coach")
+    if not coach:
+        return HttpResponseRedirect("/coach/")
+    experiences = [WorkExperience(**e) for e in coach["experiences"]]
+    shared = get_shared_resume(request.session)
+    stale_resume = _is_stale(request.session, coach)
+    return render(request, "coach/split_screen.html", {
+        "experiences": experiences,
+        "cv_text": coach["cv_text"],
+        "stale_resume": stale_resume,
+        "shared_resume": shared,
+    })
 
 
 @require_POST
@@ -48,13 +75,22 @@ def parse(request):
     except CoachParseError as e:
         return _error(str(e))
 
+    existing_conversations = (request.session.get("coach") or {}).get("conversations", {})
+    resume_version = get_resume_version(request.session)
     request.session["coach"] = {
         "cv_text": cv_text,
         "experiences": [dataclasses.asdict(e) for e in experiences],
-        "conversations": {},
+        "conversations": existing_conversations,
+        "resume_version": resume_version,
     }
 
-    return render(request, "coach/split_screen.html", {"cv_text": cv_text, "experiences": experiences})
+    shared = get_shared_resume(request.session)
+    return render(request, "coach/split_screen.html", {
+        "cv_text": cv_text,
+        "experiences": experiences,
+        "stale_resume": False,
+        "shared_resume": shared,
+    })
 
 
 @require_POST

@@ -343,3 +343,51 @@ class CoachParseTests(TestCase):
         coach_session = session["coach"]
         self.assertEqual(coach_session["cv_text"], "My CV text")
         self.assertEqual(len(coach_session["experiences"]), 2)
+
+    def test_parse_records_shared_resume_version(self):
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "r", "resume_filename": None, "version": 3}
+        session.save()
+        self._post_text(_fake())
+        self.assertEqual(self.client.session["coach"]["resume_version"], 3)
+
+    def test_parse_preserves_existing_conversations(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [{"role": "user", "content": "hello"}]
+        session.save()
+        self._post_text(_fake())
+        self.assertEqual(
+            self.client.session["coach"]["conversations"]["0"],
+            [{"role": "user", "content": "hello"}],
+        )
+
+
+class CoachWorkspaceTests(TestCase):
+
+    def test_redirects_to_index_when_no_session(self):
+        response = self.client.get("/coach/workspace/")
+        self.assertRedirects(response, "/coach/", fetch_redirect_response=False)
+
+    def test_returns_200_with_session(self):
+        _seed_coach_session(self.client)
+        response = self.client.get("/coach/workspace/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_stale_banner_present_when_version_mismatch(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "new", "resume_filename": None, "version": 2}
+        session["coach"]["resume_version"] = 1
+        session.save()
+        response = self.client.get("/coach/workspace/")
+        self.assertContains(response, "resume has changed")
+
+    def test_stale_banner_absent_when_versions_match(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "r", "resume_filename": None, "version": 1}
+        session["coach"]["resume_version"] = 1
+        session.save()
+        response = self.client.get("/coach/workspace/")
+        self.assertNotContains(response, "resume has changed")

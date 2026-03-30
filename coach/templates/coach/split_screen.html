@@ -1,3 +1,20 @@
+  {% if stale_resume %}
+  <div id="stale-banner-area" style="background:rgba(201,168,76,0.12);border-left:3px solid var(--gold,#c9a84c);padding:0.75rem 1.25rem;font-size:0.875rem;margin-bottom:0;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <span><strong>Resume updated</strong> — your shared resume has changed since the last parse. Re-parse to use the new version.</span>
+    <form hx-post="/coach/parse/"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-encoding="multipart/form-data"
+          style="margin:0">
+      {% csrf_token %}
+      <input type="hidden" name="cv_text" value="{{ shared_resume.resume_text|default:'' }}">
+      <button type="submit" style="font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;background:#1a1a2e;color:#f5f0e8;border:none;border-radius:3px;padding:0.45rem 1rem;cursor:pointer;">Re-parse</button>
+    </form>
+  </div>
+  {% else %}
+  <div id="stale-banner-area"></div>
+  {% endif %}
+
   <style type="text/tailwindcss">
     :root {
       --ink:     #1a1a2e;
@@ -369,6 +386,7 @@
       </div>
 
       <div class="start-over">
+        {% if shared_resume %}<a href="/?change=1" style="margin-right:1rem">Change resume</a>{% endif %}
         <a href="/coach/">↩ Start over</a>
       </div>
     </div>

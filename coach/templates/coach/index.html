@@ -224,7 +224,7 @@
   <header class="site-header">
     <h1>BetterCV</h1>
     <nav class="site-nav">
-      <a href="/" class="nav-link">ATS Analyzer</a>
+      <a href="/analyzer/" class="nav-link">ATS Analyzer</a>
       <a href="/coach/" class="nav-link active">Resume Coach</a>
       <a href="/compare/" class="nav-link">Compare JDs</a>
     </nav>
@@ -247,13 +247,16 @@
         {% csrf_token %}
 
         <div class="input-card">
-          <span class="card-label">Your CV</span>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
+            <span class="card-label" style="margin-bottom:0">Your CV</span>
+            {% if shared_resume %}<a href="/?change=1" style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">Change resume</a>{% endif %}
+          </div>
           <textarea
             id="cv_text"
             name="cv_text"
             class="styled-textarea"
             rows="16"
-            placeholder="Paste the full text of your CV here…"></textarea>
+            placeholder="Paste the full text of your CV here…">{{ shared_resume.resume_text|default:'' }}</textarea>
 
           <div class="divider-label">or upload</div>
 
