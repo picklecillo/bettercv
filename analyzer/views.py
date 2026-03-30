@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 
 from .claude import ClaudeServiceError, get_service
 from .pdf import PdfExtractionError, extract_text_from_pdf
+from shared.session import get_shared_resume
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -18,7 +19,8 @@ def _error(message: str, status: int = 400) -> HttpResponse:
 
 
 def index(request):
-    return render(request, 'analyzer/index.html')
+    shared = get_shared_resume(request.session)
+    return render(request, 'analyzer/index.html', {'shared_resume': shared})
 
 
 @require_POST
@@ -44,7 +46,7 @@ def analyze(request):
     return HttpResponse(
         f'<div id="sse-container"'
         f'     hx-ext="sse"'
-        f'     sse-connect="/analyze/stream/?key={key}"'
+        f'     sse-connect="/analyzer/analyze/stream/?key={key}"'
         f'     sse-close="done">'
         f'  <div id="stream-output"'
         f'       sse-swap="chunk"'

@@ -373,7 +373,7 @@
   <header class="site-header">
     <h1>BetterCV</h1>
     <nav class="site-nav">
-      <a href="/" class="nav-link active">ATS Analyzer</a>
+      <a href="/analyzer/" class="nav-link active">ATS Analyzer</a>
       <a href="/coach/" class="nav-link">Resume Coach</a>
       <a href="/compare/" class="nav-link">Compare JDs</a>
     </nav>
@@ -381,7 +381,7 @@
 
   <!-- Form grid -->
   <main>
-    <form hx-post="/analyze/"
+    <form hx-post="/analyzer/analyze/"
           hx-target="#result"
           hx-swap="innerHTML"
           hx-encoding="multipart/form-data"
@@ -393,13 +393,16 @@
 
         <!-- Resume input -->
         <div class="input-card">
-          <span class="card-label">Your Resume</span>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
+            <span class="card-label" style="margin-bottom:0">Your Resume</span>
+            {% if shared_resume %}<a href="/?change=1" style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">Change resume</a>{% endif %}
+          </div>
           <textarea
             id="resume_text"
             name="resume_text"
             class="styled-textarea"
             rows="14"
-            placeholder="Paste the full text of your resume here…"></textarea>
+            placeholder="Paste the full text of your resume here…">{{ shared_resume.resume_text|default:'' }}</textarea>
 
           <div class="divider-label">or upload</div>
 
