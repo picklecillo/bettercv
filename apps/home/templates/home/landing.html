@@ -32,10 +32,12 @@
 
     /* ── Header ── */
     .site-header {
+      flex-shrink: 0;
       background-color: var(--ink);
       padding: 1.25rem 2.5rem;
       display: flex;
       align-items: center;
+      gap: 1.5rem;
       border-bottom: 3px solid var(--gold);
     }
 
@@ -53,6 +55,8 @@
       margin: 5rem auto 3.5rem;
       padding: 0 2.5rem;
       text-align: center;
+      display: flex;
+      flex-direction: column;
     }
 
     .hero-eyebrow {
@@ -213,7 +217,7 @@
     <section class="hero">
       <p class="hero-eyebrow">AI-powered career tools</p>
       <h2>Put your best resume forward</h2>
-      <p>Upload your resume once and instantly access four tools that analyze, coach, compare, and format your resume — all powered by Claude.</p>
+      <p>Upload your resume once and instantly access four tools that analyze, coach, compare, and format your resume — all powered by AI.</p>
       <a href="/home/" class="cta-btn">Get started</a>
     </section>
 
