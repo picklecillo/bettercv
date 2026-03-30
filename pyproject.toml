@@ -11,5 +11,6 @@ dependencies = [
     "markdown>=3.10.2",
     "pdfplumber>=0.11.9",
     "python-dotenv>=1.2.2",
+    "simple-resume==0.3.2",
     "whitenoise>=6.12.0",
 ]
