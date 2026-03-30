@@ -1,334 +1,137 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BetterCV — Your Career Toolkit</title>
+{% extends "home/base.html" %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+{% block title_suffix %} — Home{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+{% block extra_head %}
+<style type="text/tailwindcss">
+  .home-content {
+    padding: 3rem 2.5rem;
+    max-width: 780px;
+  }
 
-  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  .home-intro {
+    margin-bottom: 2.5rem;
+  }
 
-  <style type="text/tailwindcss">
-    :root {
-      --ink:     #1a1a2e;
-      --ink-mid: #3d3d5c;
-      --cream:   #f5f0e8;
-      --gold:    #c9a84c;
-      --gold-lt: #e8d9a8;
-      --surface: #ffffff;
-      --border:  #e2ddd4;
-    }
+  .home-intro h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+    line-height: 1.15;
+  }
 
-    body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--cream);
-      color: var(--ink);
-      min-height: 100vh;
-    }
+  .home-intro p {
+    font-size: 0.9375rem;
+    color: var(--ink-mid);
+    line-height: 1.7;
+  }
 
-    /* ── Header ── */
-    .site-header {
-      background-color: var(--ink);
-      padding: 1.25rem 2.5rem;
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      border-bottom: 3px solid var(--gold);
-    }
+  .tool-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
 
-    .site-header h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2rem;
-      color: var(--cream);
-      letter-spacing: -0.02em;
-      line-height: 1;
-      margin-right: auto;
-    }
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: var(--ink);
+    box-shadow: 0 1px 3px rgba(26,26,46,0.05);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+  .tool-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 4px 12px rgba(26,26,46,0.1);
+    transform: translateY(-1px);
+  }
 
-    /* ── Page intro ── */
-    .page-intro {
-      max-width: 640px;
-      margin: 3.5rem auto 0;
-      padding: 0 2.5rem;
-      text-align: center;
-    }
+  .tool-card-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--gold);
+  }
 
-    .page-intro h2 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2.5rem;
-      color: var(--ink);
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
+  .tool-card-body h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 0.35rem;
+  }
 
-    .page-intro p {
-      font-size: 1rem;
-      color: var(--ink-mid);
-      line-height: 1.7;
-      margin-bottom: 2.5rem;
-    }
+  .tool-card-body p {
+    font-size: 0.825rem;
+    color: var(--ink-mid);
+    line-height: 1.6;
+  }
 
-    /* ── Input card ── */
-    .input-wrapper {
-      padding: 0 2.5rem;
-      max-width: 680px;
-      margin: 0 auto 4rem;
-    }
+  .tool-card-cta {
+    margin-top: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+</style>
+{% endblock %}
 
-    .input-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1.75rem;
-      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
-    }
+{% block content %}
+<div class="home-content">
+  <div class="home-intro">
+    <h2>Where would you like to start?</h2>
+    <p>Upload your resume in the panel on the left, then choose a tool.</p>
+  </div>
 
-    .card-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: 0.6rem;
-      display: block;
-    }
+  <div class="tool-cards">
 
-    .divider-label {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 1rem 0;
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-    .divider-label::before, .divider-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--gold-lt);
-    }
+    <a href="/analyzer/" class="tool-card">
+      <div class="tool-card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <div class="tool-card-body">
+        <h3>ATS Analyzer</h3>
+        <p>Score your resume against a job description and get keyword feedback.</p>
+      </div>
+      <span class="tool-card-cta">Analyze →</span>
+    </a>
 
-    .styled-textarea {
-      width: 100%;
-      background: var(--cream);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.875rem 1rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.875rem;
-      color: var(--ink);
-      resize: vertical;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      outline: none;
-    }
-    .styled-textarea::placeholder { color: #b0a99a; }
-    .styled-textarea:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
-    }
+    <a href="/coach/" class="tool-card">
+      <div class="tool-card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
+        </svg>
+      </div>
+      <div class="tool-card-body">
+        <h3>Resume Coach</h3>
+        <p>Work through each job with an AI coach and get stronger rewrites.</p>
+      </div>
+      <span class="tool-card-cta">Start coaching →</span>
+    </a>
 
-    .styled-file {
-      width: 100%;
-      background: var(--cream);
-      border: 1px dashed var(--gold-lt);
-      border-radius: 3px;
-      padding: 0.75rem 1rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.8rem;
-      color: var(--ink-mid);
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .styled-file:hover { border-color: var(--gold); }
+    <a href="/compare/" class="tool-card">
+      <div class="tool-card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      </div>
+      <div class="tool-card-body">
+        <h3>Multi-JD Compare</h3>
+        <p>Add multiple job descriptions and see a scored comparison at a glance.</p>
+      </div>
+      <span class="tool-card-cta">Compare roles →</span>
+    </a>
 
-    .submit-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 1.25rem;
-    }
-
-    .action-btn {
-      background-color: var(--ink);
-      color: var(--cream);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      padding: 0.85rem 2.5rem;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.15s, transform 0.1s;
-    }
-    .action-btn:hover { background-color: var(--ink-mid); }
-    .action-btn:active { transform: translateY(1px); }
-    .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
-
-    /* ── Tool cards ── */
-    .resume-status {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      font-size: 0.8rem;
-      color: var(--ink-mid);
-      margin-bottom: 1.75rem;
-    }
-
-    .resume-status-label {
-      background: var(--gold-lt);
-      padding: 0.35rem 0.875rem;
-      border-radius: 2px;
-      font-weight: 500;
-    }
-
-    .change-link {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      text-decoration: none;
-      opacity: 0.6;
-      transition: opacity 0.15s;
-    }
-    .change-link:hover { opacity: 1; }
-
-    .tool-cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 2.5rem 4rem;
-    }
-
-    @media (max-width: 700px) {
-      .tool-cards { grid-template-columns: 1fr; }
-    }
-
-    .tool-card {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1.5rem;
-      text-decoration: none;
-      color: var(--ink);
-      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
-      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
-    }
-    .tool-card:hover {
-      border-color: var(--gold);
-      box-shadow: 0 4px 12px rgba(26,26,46,0.1);
-      transform: translateY(-1px);
-    }
-
-    .tool-card-icon svg {
-      width: 2rem;
-      height: 2rem;
-      color: var(--gold);
-    }
-
-    .tool-card-body h3 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.2rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .tool-card-body p {
-      font-size: 0.85rem;
-      color: var(--ink-mid);
-      line-height: 1.65;
-    }
-
-    .tool-card-cta {
-      margin-top: auto;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-
-    /* ── Error ── */
-    .result-error {
-      border-left: 3px solid #e53e3e;
-      background: #fff5f5;
-      color: #742a2a;
-      padding: 1rem 1.25rem;
-      margin-top: 1rem;
-      border-radius: 2px;
-      font-size: 0.875rem;
-    }
-  </style>
-</head>
-<body>
-
-  <header class="site-header">
-    <h1>BetterCV</h1>
-  </header>
-
-  <main>
-    <div class="page-intro">
-      <h2>Your career toolkit</h2>
-      <p>Paste your resume once and use any of the three tools — ATS Analyzer, Resume Coach, or Multi-JD Compare.</p>
-    </div>
-
-    <div id="home-content">
-      {% if show_cards %}
-        {% include "home/_tool_cards.html" %}
-      {% else %}
-        <div class="input-wrapper">
-          <form id="resume-form"
-                hx-post="/resume/"
-                hx-target="#home-content"
-                hx-swap="innerHTML"
-                hx-encoding="multipart/form-data"
-                hx-indicator="#submit-btn">
-
-            {% csrf_token %}
-            <input type="hidden" name="source" value="home">
-
-            <div class="input-card">
-              <span class="card-label">Your Resume</span>
-              <textarea
-                name="resume_text"
-                class="styled-textarea"
-                rows="16"
-                placeholder="Paste the full text of your resume here…"></textarea>
-
-              <div class="divider-label">or upload</div>
-
-              <input type="file" name="resume_pdf" accept=".pdf" class="styled-file">
-
-              <div id="resume-error"></div>
-            </div>
-
-            <div class="submit-row">
-              <button id="submit-btn" type="submit" class="action-btn">
-                Continue
-              </button>
-            </div>
-
-          </form>
-        </div>
-      {% endif %}
-    </div>
-  </main>
-
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% if render_error %}
+<div class="result-error" style="margin-bottom:1rem;">{{ render_error }}</div>
+{% endif %}
+
+<div style="display:flex; flex-direction:column; height:100%;">
+
+  <textarea
+    id="yaml-editor"
+    class="styled-textarea"
+    style="flex:1; min-height:0; font-family:monospace; font-size:0.78rem; resize:none;"
+    spellcheck="false"
+  >{{ shared_yaml }}</textarea>
+
+  <div style="flex-shrink:0; display:flex; align-items:center; gap:0.75rem; padding-top:1rem; border-top:1px solid var(--border); margin-top:1rem;">
+
+    <form hx-post="/resume/render/"
+          hx-target="#resume-panel"
+          hx-swap="innerHTML"
+          hx-indicator="#preview-loading"
+          hx-disabled-elt="#preview-btn"
+          style="margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="yaml_content" id="yaml-for-preview">
+      <button id="preview-btn" type="submit" class="action-btn"
+              onclick="document.getElementById('yaml-for-preview').value = document.getElementById('yaml-editor').value">
+        Preview
+      </button>
+    </form>
+
+    <span id="preview-loading" class="htmx-indicator" style="font-size:0.78rem; color:var(--ink-mid);">
+      Rendering<span class="dots">…</span>
+    </span>
+
+    <span style="flex:1"></span>
+
+    <form action="/resume/build/" method="post" style="margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="yaml_content" id="yaml-for-pdf">
+      <button type="submit" class="ghost-btn"
+              onclick="document.getElementById('yaml-for-pdf').value = document.getElementById('yaml-editor').value">
+        Download PDF
+      </button>
+    </form>
+
+  </div>
+
+</div>

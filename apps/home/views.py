@@ -1,27 +1,61 @@
+import logging
+
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_shared_resume, set_shared_resume
+from apps.shared.session import (
+    get_shared_html,
+    get_shared_resume,
+    get_shared_yaml,
+    set_shared_html,
+    set_shared_resume,
+    set_shared_yaml,
+)
+from apps.writer.rendercv_builder import RenderCVBuildError, get_builder
+from apps.writer.writer_service import get_writer_service
+
+logger = logging.getLogger(__name__)
+
+
+def landing(request):
+    return render(request, "home/landing.html")
+
+
+def _panel_context(request) -> dict:
+    return {
+        "shared_resume": get_shared_resume(request.session),
+        "shared_html": get_shared_html(request.session),
+        "shared_yaml": get_shared_yaml(request.session),
+    }
 
 
 def index(request):
+    return render(request, "home/index.html", _panel_context(request))
+
+
+def _panel_error(request, message):
     shared = get_shared_resume(request.session)
-    change = request.GET.get("change")
-    return render(request, "home/index.html", {
-        "shared_resume": shared,
-        "show_cards": bool(shared) and not change,
-    })
+    return render(
+        request,
+        "home/_panel_upload.html",
+        {"shared_resume": shared, "error_message": message},
+        status=400,
+    )
 
 
 @require_POST
 def submit_resume(request):
+    source = request.POST.get("source", "")
+
     if request.FILES.get("resume_pdf"):
         try:
             resume_text = extract_text_from_pdf(request.FILES["resume_pdf"])
         except PdfExtractionError as e:
+            if source == "panel":
+                return _panel_error(request, str(e))
             return HttpResponse(
                 f'<div class="result-error">{escape(str(e))}</div>',
                 status=400,
@@ -32,6 +66,8 @@ def submit_resume(request):
         resume_text = request.POST.get("resume_text", "").strip()
         filename = None
         if not resume_text:
+            if source == "panel":
+                return _panel_error(request, "Please provide a resume (text or PDF).")
             return HttpResponse(
                 '<div class="result-error">Please provide a resume (text or PDF).</div>',
                 status=400,
@@ -39,13 +75,79 @@ def submit_resume(request):
             )
 
     set_shared_resume(request.session, resume_text, filename)
-    shared = get_shared_resume(request.session)
 
-    source = request.POST.get("source", "")
-    if source == "home":
-        return render(request, "home/_tool_cards.html", {"shared_resume": shared})
+    if source == "panel":
+        # Generate YAML and render HTML preview synchronously.
+        try:
+            yaml_content = "".join(get_writer_service().stream_yaml(resume_text))
+            html_content = get_builder().render_html(
+                yaml_content, request.session.session_key or "panel"
+            )
+        except RenderCVBuildError as e:
+            logger.warning("Panel render failed: %s", e)
+            return _panel_error(request, "Could not render resume preview. Please check the uploaded content.")
+        except Exception as e:
+            logger.error("Panel YAML/HTML generation failed: %s", e)
+            return _panel_error(request, "Something went wrong generating your resume preview.")
 
-    # From a tool page: redirect to home (HTMX handles the header)
+        set_shared_yaml(request.session, yaml_content)
+        set_shared_html(request.session, html_content)
+        request.session.save()
+
+        ctx = _panel_context(request)
+        return render(request, "home/_panel_preview.html", ctx)
+
+    # Legacy: from old tool-page resume forms — redirect to home
     response = HttpResponse(status=204)
-    response["HX-Redirect"] = "/"
+    response["HX-Redirect"] = "/home/"
     return response
+
+
+@require_POST
+def build_resume_pdf(request):
+    yaml_content = request.POST.get("yaml_content", "").strip() or get_shared_yaml(request.session)
+    if not yaml_content:
+        return HttpResponse("No YAML content available.", status=400, content_type="text/plain")
+
+    try:
+        pdf_bytes = get_builder().build_pdf(yaml_content, request.session.session_key or "panel")
+    except RenderCVBuildError as e:
+        return HttpResponse(str(e), status=422, content_type="text/plain")
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="resume.pdf"'
+    return response
+
+
+def show_resume_editor(request):
+    ctx = _panel_context(request)
+    if not ctx["shared_yaml"]:
+        ctx = {**ctx, "render_error": "No resume loaded. Please upload a resume first."}
+    return render(request, "home/_panel_editor.html", ctx)
+
+
+@require_POST
+def render_resume_html(request):
+    """Re-render HTML from submitted YAML and return the panel in preview state."""
+    yaml_content = request.POST.get("yaml_content", "").strip()
+    if not yaml_content:
+        return _panel_error(request, "No YAML content provided.")
+
+    try:
+        html_content = get_builder().render_html(
+            yaml_content, request.session.session_key or "panel"
+        )
+    except RenderCVBuildError as e:
+        ctx = {
+            **_panel_context(request),
+            "shared_yaml": yaml_content,
+            "render_error": str(e),
+        }
+        return render(request, "home/_panel_editor.html", ctx, status=422)
+
+    set_shared_yaml(request.session, yaml_content)
+    set_shared_html(request.session, html_content)
+    request.session.save()
+
+    ctx = _panel_context(request)
+    return render(request, "home/_panel_preview.html", ctx)

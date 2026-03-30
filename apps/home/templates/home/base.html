@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV{% block title_suffix %} — Your Career Toolkit{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+
+  <style type="text/tailwindcss">
+    :root {
+      --ink:     #1a1a2e;
+      --ink-mid: #3d3d5c;
+      --cream:   #f5f0e8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8d9a8;
+      --surface: #ffffff;
+      --border:  #e2ddd4;
+    }
+
+    /* ── Reset / base ── */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      flex-shrink: 0;
+      background-color: var(--ink);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .site-header .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.75rem;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-decoration: none;
+      margin-right: auto;
+    }
+
+    .site-nav { display: flex; gap: 0.25rem; }
+
+    .nav-link {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      text-decoration: none;
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
+    .nav-link.active { background: var(--gold); color: var(--ink); }
+
+    /* ── App shell ── */
+    .app-shell {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ── Panel column ── */
+    .panel-col {
+      width: 33.333%;
+      min-width: 300px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      flex-shrink: 0;
+      padding: 1.25rem 1.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      opacity: 0.6;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 1.75rem;
+    }
+
+    /* ── Content column ── */
+    .content-col {
+      flex: 1;
+      overflow: hidden;
+      background: var(--cream);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Panel upload form ── */
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 0.875rem 0;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .divider-label::before, .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gold-lt);
+    }
+
+    .styled-textarea {
+      width: 100%;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.75rem 0.875rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.825rem;
+      color: var(--ink);
+      resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .styled-textarea::placeholder { color: #b0a99a; }
+    .styled-textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    }
+
+    .styled-file {
+      width: 100%;
+      background: var(--cream);
+      border: 1px dashed var(--gold-lt);
+      border-radius: 3px;
+      padding: 0.625rem 0.875rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem;
+      color: var(--ink-mid);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .styled-file:hover { border-color: var(--gold); }
+
+    .action-btn {
+      background-color: var(--ink);
+      color: var(--cream);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.75rem 1.75rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .action-btn:hover { background-color: var(--ink-mid); }
+    .action-btn:active { transform: translateY(1px); }
+    .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+
+    .ghost-btn {
+      background: transparent;
+      color: var(--ink-mid);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.75rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
+    .ghost-btn:active { transform: translateY(1px); }
+    .ghost-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+
+    /* ── Shared result / error ── */
+    .result-error {
+      border-left: 3px solid #e53e3e;
+      background: #fff5f5;
+      color: #742a2a;
+      padding: 0.875rem 1rem;
+      margin-top: 1rem;
+      border-radius: 2px;
+      font-size: 0.825rem;
+    }
+
+    .loaded-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--ink-mid);
+      margin-bottom: 1rem;
+    }
+
+    .loaded-badge-label {
+      background: var(--gold-lt);
+      color: var(--ink);
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .change-link {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      text-decoration: none;
+      opacity: 0.55;
+      transition: opacity 0.15s;
+    }
+    .change-link:hover { opacity: 1; }
+
+    /* ── Spinner animation ── */
+    .spinner {
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: var(--cream);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .dots { display: inline-block; animation: blink 1.2s step-start infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="/" class="logo">BetterCV</a>
+    <nav class="site-nav">
+      <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
+      <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
+      <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
+      <a href="/writer/" class="nav-link {% if active_tool == 'writer' %}active{% endif %}">Resume Writer</a>
+    </nav>
+  </header>
+
+  <div class="app-shell">
+
+    <aside class="panel-col">
+      <div class="panel-header">
+        <span class="panel-label">Your Resume</span>
+      </div>
+      <div class="panel-body" id="resume-panel">
+        {% include "home/_panel.html" %}
+      </div>
+    </aside>
+
+    <main class="content-col">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

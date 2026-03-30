@@ -1,0 +1,52 @@
+{% if shared_resume %}
+<div id="loaded-badge" class="loaded-badge">
+  <span class="loaded-badge-label">Loaded</span>
+  <span>{{ shared_resume.resume_filename|default:"Resume" }}</span>
+  <span style="flex:1"></span>
+  <a href="#" class="change-link"
+     onclick="document.getElementById('loaded-badge').style.display='none'; document.getElementById('replace-form').style.display='block'; return false;">
+    Replace
+  </a>
+</div>
+<div id="replace-form" style="display:none">
+{% endif %}
+
+<form hx-post="/resume/"
+      hx-target="#resume-panel"
+      hx-swap="innerHTML"
+      hx-encoding="multipart/form-data"
+      hx-indicator="#panel-loading"
+      hx-disabled-elt="#panel-submit-btn"
+      {% if shared_resume %}hx-confirm="Uploading a new resume will replace the current one. Any active tool sessions may be affected. Continue?"{% endif %}>
+  {% csrf_token %}
+  <input type="hidden" name="source" value="panel">
+
+  <span class="card-label">Paste your resume</span>
+  <textarea
+    name="resume_text"
+    class="styled-textarea"
+    rows="12"
+    placeholder="Paste the full text of your resume here…">{{ shared_resume.resume_text|default:'' }}</textarea>
+
+  <div class="divider-label">or upload PDF</div>
+
+  <input type="file" name="resume_pdf" accept=".pdf" class="styled-file">
+
+  {% if error_message %}
+  <div class="result-error">{{ error_message }}</div>
+  {% endif %}
+
+  <div style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.25rem;">
+    <span id="panel-loading" class="htmx-indicator" style="font-size:0.78rem; color:var(--ink-mid);">
+      Generating preview<span class="dots">…</span>
+    </span>
+    <button id="panel-submit-btn" type="submit" class="action-btn">
+      {% if shared_resume %}Replace resume{% else %}Load resume{% endif %}
+    </button>
+  </div>
+
+</form>
+
+{% if shared_resume %}
+</div>
+{% endif %}

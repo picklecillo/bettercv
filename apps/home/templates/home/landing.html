@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV — Your Career Toolkit</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <style type="text/tailwindcss">
+    :root {
+      --ink:     #1a1a2e;
+      --ink-mid: #3d3d5c;
+      --cream:   #f5f0e8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8d9a8;
+      --surface: #ffffff;
+      --border:  #e2ddd4;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      background-color: var(--ink);
+      padding: 1.25rem 2.5rem;
+      display: flex;
+      align-items: center;
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .site-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 720px;
+      margin: 5rem auto 3.5rem;
+      padding: 0 2.5rem;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.25rem;
+    }
+
+    .hero h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 3.5rem;
+      color: var(--ink);
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--ink-mid);
+      line-height: 1.75;
+      margin-bottom: 2.5rem;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      background-color: var(--ink);
+      color: var(--cream);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 1rem 3rem;
+      border-radius: 3px;
+      text-decoration: none;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+    .cta-btn:hover {
+      background-color: var(--ink-mid);
+      transform: translateY(-1px);
+    }
+
+    /* ── Divider ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      max-width: 900px;
+      margin: 0 auto 3rem;
+      padding: 0 2.5rem;
+    }
+    .section-divider span {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      white-space: nowrap;
+      opacity: 0.5;
+    }
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Tools grid ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      max-width: 900px;
+      margin: 0 auto 6rem;
+      padding: 0 2.5rem;
+    }
+
+    .tool-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(26,26,46,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .tool-block-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: var(--gold-lt);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tool-block-icon svg {
+      width: 1.35rem;
+      height: 1.35rem;
+      color: var(--gold);
+    }
+
+    .tool-block h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.35rem;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .tool-block p {
+      font-size: 0.9rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      margin: 0;
+      flex: 1;
+    }
+
+    .tool-block-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: var(--gold-lt);
+      padding: 0.25rem 0.6rem;
+      border-radius: 2px;
+      align-self: flex-start;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.78rem;
+      color: var(--ink-mid);
+      opacity: 0.45;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>BetterCV</h1>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="hero-eyebrow">AI-powered career tools</p>
+      <h2>Put your best resume forward</h2>
+      <p>Upload your resume once and instantly access four tools that analyze, coach, compare, and format your resume — all powered by Claude.</p>
+      <a href="/home/" class="cta-btn">Get started</a>
+    </section>
+
+    <div class="section-divider"><span>The tools</span></div>
+
+    <div class="tools-grid">
+
+      <div class="tool-block">
+        <div class="tool-block-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3>ATS Analyzer</h3>
+        <p>Paste a job description and get an ATS compatibility score, a breakdown of matched and missing keywords, and a prioritized list of quick wins to improve your chances.</p>
+        <span class="tool-block-tag">Keyword scoring</span>
+      </div>
+
+      <div class="tool-block">
+        <div class="tool-block-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
+          </svg>
+        </div>
+        <h3>Resume Coach</h3>
+        <p>Work through each job on your resume with an AI coach. Get achievement-focused rewrites for every bullet and walk away with stronger, more impactful experience descriptions.</p>
+        <span class="tool-block-tag">Interactive coaching</span>
+      </div>
+
+      <div class="tool-block">
+        <div class="tool-block-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h3>Multi-JD Compare</h3>
+        <p>Add up to ten job descriptions and see a scored comparison table in one view. Instantly spot which roles are the best fit and where the gaps are.</p>
+        <span class="tool-block-tag">Batch analysis</span>
+      </div>
+
+      <div class="tool-block">
+        <div class="tool-block-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        </div>
+        <h3>Resume Writer</h3>
+        <p>Convert your resume into a clean, structured YAML format and export a polished, typeset PDF — no design tools needed. Edit the YAML directly to fine-tune every detail.</p>
+        <span class="tool-block-tag">PDF export</span>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    BetterCV &mdash; powered by Claude
+  </footer>
+
+</body>
+</html>
