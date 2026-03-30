@@ -5,7 +5,8 @@
       "Bash(make test:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:pypi.org)",
-      "WebFetch(domain:yamlresume.dev)"
+      "WebFetch(domain:yamlresume.dev)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
