@@ -4,3 +4,6 @@
 
 # cache
 __pycache__
+
+# static files
+static/
