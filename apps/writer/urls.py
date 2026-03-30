@@ -6,4 +6,5 @@ urlpatterns = [
     path("parse/", views.parse, name="writer-parse"),
     path("stream/", views.stream, name="writer-stream"),
     path("build/", views.build, name="writer-build"),
+    path("render/", views.render_preview, name="writer-render"),
 ]

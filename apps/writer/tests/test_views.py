@@ -174,20 +174,20 @@ class BuildViewTests(TestCase):
         self.assertIn(b"result-error", response.content)
 
     def test_valid_yaml_returns_pdf(self):
-        from apps.writer.tests.fakes import FakeSimpleResumeBuilder
-        with patch("apps.writer.views.get_builder", return_value=FakeSimpleResumeBuilder()):
+        from apps.writer.tests.fakes import FakeRenderCVBuilder
+        with patch("apps.writer.views.get_builder", return_value=FakeRenderCVBuilder()):
             response = self.client.post("/writer/build/", {
-                "yaml_content": "full_name: John\nemail: j@j.com\n",
+                "yaml_content": "cv:\n  name: John\n",
             })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("resume.pdf", response["Content-Disposition"])
 
     def test_build_error_returns_422(self):
-        from apps.writer.simple_resume_builder import SimpleResumeBuildError
-        from apps.writer.tests.fakes import FakeSimpleResumeBuilder
-        fake = FakeSimpleResumeBuilder()
-        fake.should_raise = SimpleResumeBuildError("Invalid YAML structure")
+        from apps.writer.rendercv_builder import RenderCVBuildError
+        from apps.writer.tests.fakes import FakeRenderCVBuilder
+        fake = FakeRenderCVBuilder()
+        fake.should_raise = RenderCVBuildError("Invalid YAML structure")
         with patch("apps.writer.views.get_builder", return_value=fake):
             response = self.client.post("/writer/build/", {
                 "yaml_content": "bad: yaml: content",
@@ -195,3 +195,40 @@ class BuildViewTests(TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertIn(b"result-error", response.content)
         self.assertIn(b"Invalid YAML structure", response.content)
+
+
+class RenderPreviewViewTests(TestCase):
+
+    def test_get_not_allowed(self):
+        response = self.client.get("/writer/render/")
+        self.assertEqual(response.status_code, 405)
+
+    def test_empty_yaml_returns_400(self):
+        response = self.client.post("/writer/render/", {"yaml_content": ""})
+        self.assertEqual(response.status_code, 400)
+
+    def test_valid_yaml_returns_html_json(self):
+        from apps.writer.tests.fakes import FAKE_HTML, FakeRenderCVBuilder
+        with patch("apps.writer.views.get_builder", return_value=FakeRenderCVBuilder()):
+            response = self.client.post("/writer/render/", {
+                "yaml_content": "cv:\n  name: John\n",
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        data = response.json()
+        self.assertIn("html", data)
+        self.assertEqual(data["html"], FAKE_HTML)
+
+    def test_render_error_returns_422_json(self):
+        from apps.writer.rendercv_builder import RenderCVBuildError
+        from apps.writer.tests.fakes import FakeRenderCVBuilder
+        fake = FakeRenderCVBuilder()
+        fake.should_raise = RenderCVBuildError("Bad YAML")
+        with patch("apps.writer.views.get_builder", return_value=fake):
+            response = self.client.post("/writer/render/", {
+                "yaml_content": "bad: yaml",
+            })
+        self.assertEqual(response.status_code, 422)
+        data = response.json()
+        self.assertIn("error", data)
+        self.assertIn("Bad YAML", data["error"])

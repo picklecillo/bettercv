@@ -1,6 +1,6 @@
 import uuid
 
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_GET, require_POST
@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared.session import get_shared_resume
 
-from .simple_resume_builder import SimpleResumeBuildError, get_builder
+from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
 
 
@@ -55,13 +55,11 @@ def stream(request):
     resume_text = nonce_data["resume_text"]
 
     def event_stream():
-        errored = False
         try:
             for chunk in get_writer_service().stream_yaml(resume_text):
                 lines = "\n".join(f"data: {line}" for line in chunk.split("\n"))
                 yield f"event: chunk\n{lines}\n\n"
         except Exception as e:
-            errored = True
             safe_msg = escape(str(e))
             yield f"event: error\ndata: {safe_msg}\n\n"
 
@@ -83,7 +81,7 @@ def build(request):
 
     try:
         pdf_bytes = get_builder().build_pdf(yaml_content, session_key)
-    except SimpleResumeBuildError as e:
+    except RenderCVBuildError as e:
         return HttpResponse(
             f'<div class="result-error">{escape(str(e))}</div>',
             status=422,
@@ -93,3 +91,19 @@ def build(request):
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="resume.pdf"'
     return response
+
+
+@require_POST
+def render_preview(request):
+    yaml_content = request.POST.get("yaml_content", "").strip()
+    if not yaml_content:
+        return JsonResponse({"error": "No YAML content provided."}, status=400)
+
+    session_key = request.session.session_key or "default"
+
+    try:
+        html = get_builder().render_html(yaml_content, session_key)
+    except RenderCVBuildError as e:
+        return JsonResponse({"error": str(e)}, status=422)
+
+    return JsonResponse({"html": html})
