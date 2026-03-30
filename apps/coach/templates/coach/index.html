@@ -1,287 +1,75 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BetterCV — Resume Coach</title>
+{% extends "home/base.html" %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+{% block title_suffix %} — Resume Coach{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+{% block extra_head %}
+<style type="text/tailwindcss">
+  .tool-scroll {
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 2.5rem;
+  }
 
-  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+  .coach-intro {
+    max-width: 560px;
+    width: 100%;
+  }
 
-  <style type="text/tailwindcss">
-    :root {
-      --ink:     #1a1a2e;
-      --ink-mid: #3d3d5c;
-      --cream:   #f5f0e8;
-      --gold:    #c9a84c;
-      --gold-lt: #e8d9a8;
-      --surface: #ffffff;
-      --border:  #e2ddd4;
-    }
+  .coach-intro h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--ink);
+    margin-bottom: 0.75rem;
+  }
 
-    body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--cream);
-      color: var(--ink);
-      min-height: 100vh;
-    }
+  .coach-intro p {
+    font-size: 0.95rem;
+    color: var(--ink-mid);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
 
-    /* ── Header ── */
-    .site-header {
-      background-color: var(--ink);
-      padding: 1.25rem 2.5rem;
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      border-bottom: 3px solid var(--gold);
-    }
+  .no-resume-notice {
+    background: var(--gold-lt);
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
 
-    .site-header h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2rem;
-      color: var(--cream);
-      letter-spacing: -0.02em;
-      line-height: 1;
-      margin-right: auto;
-    }
+{% block content %}
+<div id="main-content" style="height:100%; display:flex; flex-direction:column; overflow:hidden;">
+<div class="tool-scroll">
+  <div class="coach-intro">
+    <h2>Resume Coach</h2>
+    <p>Get a guided conversation that transforms your job descriptions into compelling, achievement-focused bullet points — one role at a time.</p>
 
-    .site-nav { display: flex; gap: 0.25rem; }
-
-    .nav-link {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold-lt);
-      text-decoration: none;
-      padding: 0.45rem 1rem;
-      border-radius: 2px;
-      transition: background 0.15s, color 0.15s;
-    }
-    .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
-    .nav-link.active { background: var(--gold); color: var(--ink); }
-
-    /* ── Page intro ── */
-    .page-intro {
-      max-width: 640px;
-      margin: 3rem auto 0;
-      padding: 0 2.5rem;
-      text-align: center;
-    }
-
-    .page-intro h2 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2rem;
-      color: var(--ink);
-      margin-bottom: 0.75rem;
-    }
-
-    .page-intro p {
-      font-size: 0.95rem;
-      color: var(--ink-mid);
-      line-height: 1.7;
-    }
-
-    /* ── Input card ── */
-    .input-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1.75rem;
-      box-shadow: 0 1px 3px rgba(26,26,46,0.06);
-      max-width: 680px;
-      margin: 2rem auto;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .input-wrapper {
-      padding: 0 2.5rem;
-      max-width: 680px;
-      margin: 2rem auto 3rem;
-    }
-
-    .card-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: 0.6rem;
-      display: block;
-    }
-
-    .divider-label {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 1rem 0;
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-    .divider-label::before, .divider-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--gold-lt);
-    }
-
-    .styled-textarea {
-      width: 100%;
-      background: var(--cream);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.875rem 1rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.875rem;
-      color: var(--ink);
-      resize: vertical;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      outline: none;
-    }
-    .styled-textarea::placeholder { color: #b0a99a; }
-    .styled-textarea:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
-    }
-
-    .styled-file {
-      width: 100%;
-      background: var(--cream);
-      border: 1px dashed var(--gold-lt);
-      border-radius: 3px;
-      padding: 0.75rem 1rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.8rem;
-      color: var(--ink-mid);
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .styled-file:hover { border-color: var(--gold); }
-
-    .submit-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 1.25rem;
-    }
-
-    .action-btn {
-      background-color: var(--ink);
-      color: var(--cream);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      padding: 0.85rem 2.5rem;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.15s, transform 0.1s;
-    }
-    .action-btn:hover { background-color: var(--ink-mid); }
-    .action-btn:active { transform: translateY(1px); }
-    .action-btn.htmx-request { opacity: 0.8; cursor: not-allowed; }
-    .action-btn.htmx-request .btn-text { display: none; }
-    .btn-spinner { display: none; }
-    .action-btn.htmx-request .btn-spinner {
-      display: inline-block;
-      width: 0.9em;
-      height: 0.9em;
-      border: 2px solid rgba(245,240,232,0.35);
-      border-top-color: var(--cream);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Error ── */
-    .result-error {
-      border-left: 3px solid #e53e3e;
-      background: #fff5f5;
-      color: #742a2a;
-      padding: 1rem 1.25rem;
-      margin-top: 1rem;
-      border-radius: 2px;
-      font-size: 0.875rem;
-    }
-  </style>
-</head>
-<body>
-
-  <header class="site-header">
-    <h1>BetterCV</h1>
-    <nav class="site-nav">
-      <a href="/analyzer/" class="nav-link">ATS Analyzer</a>
-      <a href="/coach/" class="nav-link active">Resume Coach</a>
-      <a href="/compare/" class="nav-link">Compare JDs</a>
-      <a href="/writer/" class="nav-link">Resume Writer</a>
-    </nav>
-  </header>
-
-  <main id="main-content">
-
-    <div class="page-intro">
-      <h2>Resume Coach</h2>
-      <p>Upload your CV and get a guided conversation that transforms generic job descriptions into compelling, achievement-focused rewrites.</p>
-    </div>
-
-    <div class="input-wrapper">
+    {% if shared_resume %}
       <form hx-post="/coach/parse/"
             hx-target="#main-content"
             hx-swap="innerHTML"
             hx-encoding="multipart/form-data"
-            hx-indicator="#submit-btn">
-
+            hx-indicator="#coach-btn"
+            style="margin:0;">
         {% csrf_token %}
-
-        <div class="input-card">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
-            <span class="card-label" style="margin-bottom:0">Your CV</span>
-            {% if shared_resume %}<a href="/?change=1" style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mid);text-decoration:none;opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">Change resume</a>{% endif %}
-          </div>
-          <textarea
-            id="cv_text"
-            name="cv_text"
-            class="styled-textarea"
-            rows="16"
-            placeholder="Paste the full text of your CV here…">{{ shared_resume.resume_text|default:'' }}</textarea>
-
-          <div class="divider-label">or upload</div>
-
-          <input
-            id="resume_pdf"
-            type="file"
-            name="resume_pdf"
-            accept=".pdf"
-            class="styled-file">
-
-          <div id="parse-error"></div>
-        </div>
-
-        <div class="submit-row">
-          <button id="submit-btn" type="submit" class="action-btn">
-            <span class="btn-text">Start Coaching</span>
-            <span class="btn-spinner" aria-hidden="true"></span>
-          </button>
-        </div>
-
+        <input type="hidden" name="cv_text" value="{{ shared_resume.resume_text }}">
+        <button id="coach-btn" type="submit" class="action-btn">
+          Start Coaching
+        </button>
       </form>
-    </div>
-
-  </main>
-
-</body>
-</html>
+    {% else %}
+      <div class="no-resume-notice">
+        Upload your resume in the left panel to get started.
+      </div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock %}

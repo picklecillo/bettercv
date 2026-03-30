@@ -6,7 +6,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_shared_resume
+from apps.shared.session import get_shared_resume, panel_context
 
 from .claude import ClaudeServiceError, get_service
 
@@ -20,8 +20,10 @@ def _error(message: str, status: int = 400) -> HttpResponse:
 
 
 def index(request):
-    shared = get_shared_resume(request.session)
-    return render(request, 'analyzer/index.html', {'shared_resume': shared})
+    return render(request, 'analyzer/index.html', {
+        **panel_context(request.session),
+        "active_tool": "analyzer",
+    })
 
 
 @require_POST

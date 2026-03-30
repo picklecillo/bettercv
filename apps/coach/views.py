@@ -8,7 +8,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_resume_version, get_shared_resume
+from apps.shared.session import get_resume_version, get_shared_resume, panel_context
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 
@@ -40,8 +40,10 @@ def _is_stale(session, coach_session: dict) -> bool:
 
 def index(request):
     request.session.pop("coach", None)
-    shared = get_shared_resume(request.session)
-    return render(request, "coach/index.html", {"shared_resume": shared})
+    return render(request, "coach/index.html", {
+        **panel_context(request.session),
+        "active_tool": "coach",
+    })
 
 
 def workspace(request):
@@ -49,13 +51,13 @@ def workspace(request):
     if not coach:
         return HttpResponseRedirect("/coach/")
     experiences = [WorkExperience(**e) for e in coach["experiences"]]
-    shared = get_shared_resume(request.session)
     stale_resume = _is_stale(request.session, coach)
     return render(request, "coach/split_screen.html", {
+        **panel_context(request.session),
+        "active_tool": "coach",
         "experiences": experiences,
         "cv_text": coach["cv_text"],
         "stale_resume": stale_resume,
-        "shared_resume": shared,
     })
 
 
@@ -85,12 +87,12 @@ def parse(request):
         "resume_version": resume_version,
     }
 
-    shared = get_shared_resume(request.session)
     return render(request, "coach/split_screen.html", {
+        **panel_context(request.session),
+        "active_tool": "coach",
         "cv_text": cv_text,
         "experiences": experiences,
         "stale_resume": False,
-        "shared_resume": shared,
     })
 
 

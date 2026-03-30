@@ -6,7 +6,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_shared_resume
+from apps.shared.session import get_shared_resume, panel_context
 
 from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
@@ -21,8 +21,10 @@ def _error(message: str, status: int = 400) -> HttpResponse:
 
 
 def index(request):
-    shared = get_shared_resume(request.session)
-    return render(request, "writer/index.html", {"shared_resume": shared})
+    return render(request, "writer/index.html", {
+        **panel_context(request.session),
+        "active_tool": "writer",
+    })
 
 
 @require_POST

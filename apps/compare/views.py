@@ -6,7 +6,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_resume_version, get_shared_resume
+from apps.shared.session import get_resume_version, get_shared_resume, panel_context
 
 from .compare_service import CompareMetadataError, get_compare_service
 
@@ -31,20 +31,22 @@ def _is_stale(session, compare_session: dict) -> bool:
 
 def index(request):
     request.session.pop("compare", None)
-    shared = get_shared_resume(request.session)
-    return render(request, "compare/index.html", {"shared_resume": shared})
+    return render(request, "compare/index.html", {
+        **panel_context(request.session),
+        "active_tool": "compare",
+    })
 
 
 def workspace(request):
     compare = request.session.get("compare")
     if not compare:
         return HttpResponseRedirect("/compare/")
-    shared = get_shared_resume(request.session)
     stale_resume = _is_stale(request.session, compare)
     return render(request, "compare/workspace.html", {
+        **panel_context(request.session),
+        "active_tool": "compare",
         "resume_text": compare["resume_text"],
         "stale_resume": stale_resume,
-        "shared_resume": shared,
     })
 
 
@@ -73,11 +75,11 @@ def parse_resume(request):
         return _error(str(e))
 
     try:
-        shared = get_shared_resume(request.session)
         return render(request, "compare/workspace.html", {
+            **panel_context(request.session),
+            "active_tool": "compare",
             "resume_text": resume_text,
             "stale_resume": False,
-            "shared_resume": shared,
         })
     except Exception as e:
         return _error(str(e))
