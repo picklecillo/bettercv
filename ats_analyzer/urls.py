@@ -20,11 +20,11 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('home.urls')),
-    path('analyzer/', include('analyzer.urls')),
-    path('coach/', include('coach.urls')),
-    path('compare/', include('compare.urls')),
-    path('writer/', include('writer.urls')),
+    path('', include('apps.home.urls')),
+    path('analyzer/', include('apps.analyzer.urls')),
+    path('coach/', include('apps.coach.urls')),
+    path('compare/', include('apps.compare.urls')),
+    path('writer/', include('apps.writer.urls')),
 ]
 
 if settings.DEBUG and not settings.TESTING:

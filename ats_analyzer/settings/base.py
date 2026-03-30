@@ -42,11 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'analyzer',
-    'coach',
-    'compare',
-    'home',
-    'writer',
+    'apps.analyzer',
+    'apps.coach',
+    'apps.compare',
+    'apps.home',
+    'apps.writer',
 ]
 
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
