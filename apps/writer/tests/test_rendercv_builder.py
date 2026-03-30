@@ -6,9 +6,10 @@ from django.test import TestCase
 from apps.writer.rendercv_builder import RenderCVBuilder, RenderCVBuildError
 
 
-def _make_completed_process(returncode=0, stderr=""):
+def _make_completed_process(returncode=0, stdout="", stderr=""):
     proc = MagicMock(spec=subprocess.CompletedProcess)
     proc.returncode = returncode
+    proc.stdout = stdout
     proc.stderr = stderr
     return proc
 

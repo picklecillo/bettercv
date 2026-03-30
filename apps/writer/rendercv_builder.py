@@ -1,6 +1,9 @@
+import logging
 import pathlib
 import subprocess
 import tempfile
+
+logger = logging.getLogger(__name__)
 
 
 class RenderCVBuildError(Exception):
@@ -21,14 +24,16 @@ class RenderCVBuilder:
                     "--pdf-path", "out.pdf",
                     "--dont-generate-markdown",
                     "--dont-generate-png",
-                    "--quiet",
                 ],
                 capture_output=True,
                 text=True,
                 cwd=tmpdir,
             )
             if result.returncode != 0:
-                raise RenderCVBuildError(result.stderr.strip() or "rendercv failed")
+                detail = (result.stderr.strip() or result.stdout.strip() or "rendercv failed")
+                logger.error("rendercv failed (rc=%d):\nSTDOUT:\n%s\nSTDERR:\n%s\nYAML:\n%s",
+                             result.returncode, result.stdout, result.stderr, yaml_content)
+                raise RenderCVBuildError(detail)
 
             if not pdf_path.exists():
                 raise RenderCVBuildError("PDF was not produced.")
@@ -48,14 +53,16 @@ class RenderCVBuilder:
                     "--dont-generate-typst",
                     "--dont-generate-pdf",
                     "--dont-generate-png",
-                    "--quiet",
                 ],
                 capture_output=True,
                 text=True,
                 cwd=tmpdir,
             )
             if result.returncode != 0:
-                raise RenderCVBuildError(result.stderr.strip() or "rendercv failed")
+                detail = (result.stderr.strip() or result.stdout.strip() or "rendercv failed")
+                logger.error("rendercv failed (rc=%d):\nSTDOUT:\n%s\nSTDERR:\n%s\nYAML:\n%s",
+                             result.returncode, result.stdout, result.stderr, yaml_content)
+                raise RenderCVBuildError(detail)
 
             if not html_path.exists():
                 raise RenderCVBuildError("HTML was not produced.")

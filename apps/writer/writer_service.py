@@ -26,6 +26,8 @@ Follow this structure precisely. Omit any section that has no data in the source
     - network: GitHub
       username: janesmith
   sections:
+    summary:
+      - Full stack engineer with 10+ years of experience across Python, JavaScript, and cloud infrastructure
     experience:
       - company: Acme Corp
         position: Senior Software Engineer
@@ -82,7 +84,7 @@ design:
   theme: classic
 """
 
-_PREFILL = "cv:\n"
+_PREFILL = "cv:"
 
 
 class WriterService:

@@ -94,6 +94,8 @@
   const iframe      = document.getElementById('preview-iframe');
   const placeholder = document.getElementById('preview-placeholder');
 
+  let hadStreamError = false;
+
   // Intercept chunk events before HTMX can swap them; accumulate into textarea instead.
   chunkProxy.addEventListener('htmx:sseBeforeMessage', function (e) {
     e.preventDefault();
@@ -103,6 +105,7 @@
   // Intercept error events before HTMX can swap them; show inline error.
   errorProxy.addEventListener('htmx:sseBeforeMessage', function (e) {
     e.preventDefault();
+    hadStreamError = true;
     errorDiv.innerHTML = '<div class="result-error">Conversion error: ' + e.detail.data + '</div>';
   });
 
@@ -113,11 +116,15 @@
     buildBtn.disabled = false;
     refreshBtn.disabled = false;
     yamlBtn.disabled = false;
-    renderPreview();
+    // Skip auto-render if streaming errored or if Claude produced no content beyond the prefill.
+    if (!hadStreamError && textarea.value.trim().length > 4) {  // more than just "cv:"
+      renderPreview();
+    }
   });
 
   function renderPreview() {
     if (!textarea.value.trim()) return;
+    errorDiv.innerHTML = '';
     refreshBtn.classList.add('loading');
     refreshBtn.disabled = true;
 
