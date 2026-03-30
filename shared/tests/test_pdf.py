@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from analyzer.pdf import PdfExtractionError, extract_text_from_pdf
+from shared.pdf import PdfExtractionError, extract_text_from_pdf
 
 
 class ExtractTextFromPdfTests(TestCase):
@@ -16,7 +16,7 @@ class ExtractTextFromPdfTests(TestCase):
         mock_pdf.__enter__ = lambda s: s
         mock_pdf.__exit__ = MagicMock(return_value=False)
 
-        with patch("analyzer.pdf.pdfplumber.open", return_value=mock_pdf):
+        with patch("shared.pdf.pdfplumber.open", return_value=mock_pdf):
             result = extract_text_from_pdf(io.BytesIO(b"fake pdf"))
 
         self.assertEqual(result, "Page one text")
@@ -31,7 +31,7 @@ class ExtractTextFromPdfTests(TestCase):
         mock_pdf.__enter__ = lambda s: s
         mock_pdf.__exit__ = MagicMock(return_value=False)
 
-        with patch("analyzer.pdf.pdfplumber.open", return_value=mock_pdf):
+        with patch("shared.pdf.pdfplumber.open", return_value=mock_pdf):
             result = extract_text_from_pdf(io.BytesIO(b"fake pdf"))
 
         self.assertEqual(result, "Real content")
@@ -42,14 +42,14 @@ class ExtractTextFromPdfTests(TestCase):
         mock_pdf.__enter__ = lambda s: s
         mock_pdf.__exit__ = MagicMock(return_value=False)
 
-        with patch("analyzer.pdf.pdfplumber.open", return_value=mock_pdf):
+        with patch("shared.pdf.pdfplumber.open", return_value=mock_pdf):
             with self.assertRaises(PdfExtractionError) as ctx:
                 extract_text_from_pdf(io.BytesIO(b"fake pdf"))
 
         self.assertIn("scanned", str(ctx.exception))
 
     def test_raises_on_unreadable_pdf(self):
-        with patch("analyzer.pdf.pdfplumber.open", side_effect=Exception("corrupt")):
+        with patch("shared.pdf.pdfplumber.open", side_effect=Exception("corrupt")):
             with self.assertRaises(PdfExtractionError) as ctx:
                 extract_text_from_pdf(io.BytesIO(b"bad pdf"))
 

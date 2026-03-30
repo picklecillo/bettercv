@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 
 from analyzer.claude import ClaudeServiceError
-from analyzer.pdf import PdfExtractionError
+from shared.pdf import PdfExtractionError
 from analyzer.tests.fakes import FakeClaudeService
 
 

@@ -319,7 +319,7 @@ class CoachParseTests(TestCase):
     def test_unreadable_pdf_returns_error(self):
         from io import BytesIO
         from unittest.mock import patch as _patch
-        from analyzer.pdf import PdfExtractionError
+        from shared.pdf import PdfExtractionError
         pdf_file = BytesIO(b"bad pdf")
         pdf_file.name = "cv.pdf"
         with _patch("coach.views.extract_text_from_pdf", side_effect=PdfExtractionError("Unreadable PDF.")):

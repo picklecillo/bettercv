@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from analyzer.pdf import PdfExtractionError
+from shared.pdf import PdfExtractionError
 
 
 def _seed_shared_resume(client, resume_text="My resume.", filename=None, version=1):

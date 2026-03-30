@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
-from analyzer.pdf import PdfExtractionError, extract_text_from_pdf
+from shared.pdf import PdfExtractionError, extract_text_from_pdf
 from shared.session import get_shared_resume, set_shared_resume
 
 

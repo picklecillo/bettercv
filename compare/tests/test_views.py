@@ -59,7 +59,7 @@ class CompareParseResumeTests(TestCase):
         self.assertIn(b"result-error", response.content)
 
     def test_unreadable_pdf_returns_error(self):
-        from analyzer.pdf import PdfExtractionError
+        from shared.pdf import PdfExtractionError
         pdf_file = BytesIO(b"bad pdf")
         pdf_file.name = "resume.pdf"
         with patch("compare.views.extract_text_from_pdf",
