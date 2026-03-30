@@ -14,3 +14,23 @@ dependencies = [
     "rendercv[full]",
     "whitenoise>=6.12.0",
 ]
+
+[dependency-groups]
+dev = [
+    "django-debug-toolbar>=5.1.0",
+    "django-debug-toolbar-template-profiler>=2.1.0",
+    "ipdb>=0.13.13",
+    "pylint>=3.3.3",
+    "ruff>=0.8.6",
+    "pdbeditorsupport>=0.4.0",
+    "django-browser-reload>=1.21.0",
+]
+
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ats_analyzer"]
