@@ -297,6 +297,16 @@
       font-size: 0.875rem;
     }
 
+    /* ── History count badge ── */
+    .history-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      opacity: 0.85;
+      margin-left: 0.35rem;
+    }
+
     /* ── Start over ── */
     .start-over {
       flex-shrink: 0;
@@ -306,7 +316,7 @@
       justify-content: flex-end;
     }
 
-    .start-over a {
+    .start-over a, .start-over-btn {
       font-size: 0.68rem;
       font-weight: 500;
       letter-spacing: 0.1em;
@@ -316,7 +326,14 @@
       opacity: 0.5;
       transition: opacity 0.15s;
     }
-    .start-over a:hover { opacity: 1; }
+    .start-over a:hover, .start-over-btn:hover { opacity: 1; }
+    .start-over-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      padding: 0;
+    }
   </style>
 
   <div class="coach-grid">
@@ -325,14 +342,17 @@
     <div class="panel">
       <div class="panel-header">Work Experiences</div>
       <div class="experience-list">
-        {% for exp in experiences %}
+        {% for item in experiences_with_history %}
         <button
           class="exp-btn"
-          data-index="{{ forloop.counter0 }}"
-          data-description="{{ exp.original_description|escape }}"
-          onclick="selectExp({{ forloop.counter0 }}, this.dataset.description)">
-          <strong>{{ exp.title }}</strong><br>
-          <span style="opacity:0.7; font-size:0.72rem">{{ exp.company }} &middot; {{ exp.dates }}</span>
+          data-index="{{ item.index }}"
+          data-description="{{ item.exp.original_description|escape }}"
+          onclick="selectExp({{ item.index }}, this.dataset.description)">
+          <strong>{{ item.exp.title }}</strong><br>
+          <span style="opacity:0.7; font-size:0.72rem">{{ item.exp.company }} &middot; {{ item.exp.dates }}</span>
+          {% if item.display_history %}
+          <span class="history-badge">{{ item.display_history|length }} msg{% if item.display_history|length != 1 %}s{% endif %}</span>
+          {% endif %}
         </button>
         {% endfor %}
       </div>
@@ -359,17 +379,30 @@
 
       <!-- Per-WE chat panes -->
       <div id="chat-panes">
-        {% for exp in experiences %}
-        <div id="chat-pane-{{ forloop.counter0 }}" class="chat-pane">
-          <div id="chat-transcript-{{ forloop.counter0 }}" class="chat-transcript"></div>
+        {% for item in experiences_with_history %}
+        <div id="chat-pane-{{ item.index }}" class="chat-pane" {% if item.display_history %}data-loaded="1"{% endif %}>
+          <div id="chat-transcript-{{ item.index }}" class="chat-transcript">
+            {% for msg in item.display_history %}
+              {% if msg.role == "assistant" %}
+              <div class="chat-msg assistant-msg"{% if msg.rewrite_attr %} data-rewrite="{{ msg.rewrite_attr|safe }}"{% endif %}>
+                <div class="msg-body">{{ msg.display_content }}</div>
+                <button class="copy-btn" aria-label="Copy" onclick="navigator.clipboard.writeText(this.closest('.chat-msg').querySelector('.msg-body').innerText)">Copy</button>
+              </div>
+              {% elif msg.role == "user" %}
+              <div class="chat-msg user-msg">
+                <div class="msg-body">{{ msg.display_content }}</div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
           <div class="chat-input-area">
             <form hx-post="/coach/chat/"
-                  hx-target="#chat-transcript-{{ forloop.counter0 }}"
+                  hx-target="#chat-transcript-{{ item.index }}"
                   hx-swap="beforeend"
                   hx-encoding="multipart/form-data"
                   hx-on::after-request="this.reset()">
               {% csrf_token %}
-              <input type="hidden" name="exp_index" value="{{ forloop.counter0 }}">
+              <input type="hidden" name="exp_index" value="{{ item.index }}">
               <input type="hidden" name="is_followup" value="1">
               <div class="chat-input-row">
                 <textarea
@@ -388,7 +421,10 @@
 
       <div class="start-over">
         {% if shared_resume %}<a href="/?change=1" style="margin-right:1rem">Change resume</a>{% endif %}
-        <a href="/coach/">↩ Start over</a>
+        <form hx-post="/coach/reset/" hx-encoding="multipart/form-data" style="display:inline;margin:0">
+          {% csrf_token %}
+          <button type="submit" class="start-over-btn">↩ Start over</button>
+        </form>
       </div>
     </div>
 
@@ -420,7 +456,7 @@
       activeExpIdx = idx;
       updateUpdatedSection(idx);
 
-      // Load initial chat once per WE
+      // Load initial chat once per WE; skip if pane already has history
       if (!pane.dataset.loaded) {
         pane.dataset.loaded = '1';
         var transcript = document.getElementById('chat-transcript-' + idx);
@@ -431,6 +467,10 @@
           headers: { 'X-CSRFToken': getCsrf() },
           values: { exp_index: String(idx) }
         });
+      } else {
+        // Scroll restored history to bottom
+        var transcript = document.getElementById('chat-transcript-' + idx);
+        transcript.scrollTop = transcript.scrollHeight;
       }
     }
 
@@ -449,7 +489,7 @@
       navigator.clipboard.writeText(text);
     }
 
-    // Watch for new assistant messages with a <rewrite> block
+    // Watch for new assistant messages with rewrite content
     var _rewriteObserver = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         mutation.addedNodes.forEach(function(node) {
@@ -472,6 +512,15 @@
 
     var _panesEl = document.getElementById('chat-panes');
     if (_panesEl) _rewriteObserver.observe(_panesEl, { childList: true, subtree: true });
+
+    // Restore weRewrites from pre-rendered history on page load (latest rewrite per pane wins)
+    document.querySelectorAll('#chat-panes .chat-pane[data-loaded]').forEach(function(pane) {
+      var idx = parseInt(pane.id.replace('chat-pane-', ''), 10);
+      var msgs = pane.querySelectorAll('.assistant-msg[data-rewrite]');
+      if (msgs.length > 0) {
+        weRewrites[idx] = msgs[msgs.length - 1].dataset.rewrite;
+      }
+    });
 
     // Scroll the active chat transcript to the bottom after every HTMX swap inside it
     // and remove the "Starting session..." placeholder once real content arrives

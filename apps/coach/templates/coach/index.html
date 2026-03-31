@@ -46,6 +46,9 @@
 
 {% block content %}
 <div id="main-content" style="height:100%; display:flex; flex-direction:column; overflow:hidden;">
+{% if restore %}
+  {% include "coach/split_screen.html" %}
+{% else %}
 <div class="tool-scroll">
   <div class="coach-intro">
     <h2>Resume Coach</h2>
@@ -71,5 +74,6 @@
     {% endif %}
   </div>
 </div>
+{% endif %}
 </div>
 {% endblock %}

@@ -1,5 +1,6 @@
 import uuid
 
+import markdown as md
 from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
@@ -29,12 +30,46 @@ def _is_stale(session, compare_session: dict) -> bool:
     return shared_version > tool_version
 
 
+def _build_jds_for_restore(compare: dict) -> list[dict]:
+    result = []
+    for i, (jd_id, jd) in enumerate(compare["jds"].items(), start=1):
+        analysis_html = None
+        if jd.get("analysis"):
+            analysis_html = md.markdown(jd["analysis"], extensions=["tables"])
+        result.append({
+            "jd_id": jd_id,
+            "jd_num": i,
+            "analysis_html": analysis_html,
+            "metadata": jd.get("metadata"),
+            "jd_text": jd["jd_text"],
+        })
+    return result
+
+
 def index(request):
+    compare = request.session.get("compare")
+    if compare and compare.get("jds"):
+        stale_resume = _is_stale(request.session, compare)
+        return render(request, "compare/index.html", {
+            **panel_context(request.session),
+            "active_tool": "compare",
+            "restore": True,
+            "stale_resume": stale_resume,
+            "jds_for_restore": _build_jds_for_restore(compare),
+        })
     request.session.pop("compare", None)
     return render(request, "compare/index.html", {
         **panel_context(request.session),
         "active_tool": "compare",
     })
+
+
+@require_POST
+def reset(request):
+    request.session.pop("compare", None)
+    response = HttpResponse()
+    response["HX-Redirect"] = "/compare/"
+    return response
 
 
 def workspace(request):
@@ -276,3 +311,44 @@ def stream(request):
     response["Cache-Control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"
     return response
+
+
+@require_POST
+def reanalyze(request, jd_id: str):
+    compare = request.session.get("compare")
+    if not compare:
+        return _error("Session expired. Please re-upload your resume.")
+    if jd_id not in compare["jds"]:
+        return _error("Unknown job description.", status=400)
+
+    jd = compare["jds"][jd_id]
+    jd_text = jd["jd_text"]
+    jd_num = list(compare["jds"].keys()).index(jd_id) + 1
+
+    nonce = str(uuid.uuid4())
+    request.session[nonce] = {
+        "jd_id": jd_id,
+        "jd_num": jd_num,
+        "resume_text": compare["resume_text"],
+        "jd_text": jd_text,
+    }
+    request.session.modified = True
+
+    card_html = (
+        f'<div class="analysis-card" id="card-{jd_id}"'
+        f'     hx-ext="sse"'
+        f'     sse-connect="/compare/stream/?key={nonce}"'
+        f'     sse-close="done">'
+        f'  <div class="card-top-bar streaming"></div>'
+        f'  <div class="card-header">'
+        f'    <span class="card-title">Job {jd_num}</span>'
+        f'  </div>'
+        f'  <div id="sse-wrap-{jd_id}">'
+        f'    <div class="stream-status">Analyzing<span class="dots">...</span></div>'
+        f'    <div id="stream-out-{jd_id}" sse-swap="chunk" hx-swap="beforeend" class="stream-output"></div>'
+        f'    <div sse-swap="wrap" hx-target="#sse-wrap-{jd_id}" hx-swap="outerHTML"></div>'
+        f'    <div sse-swap="metadata" hx-target="#summary-row-{jd_id}" hx-swap="outerHTML"></div>'
+        f'  </div>'
+        f'</div>'
+    )
+    return HttpResponse(card_html, content_type="text/html")

@@ -267,11 +267,99 @@ class CompareIndexTests(TestCase):
         response = self.client.get("/compare/")
         self.assertEqual(response.status_code, 200)
 
-    def test_get_clears_existing_compare_session(self):
+    def test_get_with_empty_jds_clears_session(self):
         session = self.client.session
         session["compare"] = {"resume_text": "old resume", "jds": {}}
         session.save()
-
         self.client.get("/compare/")
-
         self.assertNotIn("compare", self.client.session)
+
+    def test_get_with_completed_jd_restores_workspace(self):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {
+                "abc": {
+                    "jd_text": "Senior engineer role.",
+                    "analysis": "## ATS Score\n90/100",
+                    "metadata": {"company": "Acme", "title": "Engineer", "score_low": 85, "score_high": 90},
+                }
+            },
+        }
+        session.save()
+        response = self.client.get("/compare/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Acme", response.content)
+        self.assertIn(b"compare-workspace", response.content)
+
+    def test_get_with_incomplete_jd_shows_reanalyze_button(self):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {
+                "abc": {"jd_text": "Senior engineer role.", "analysis": None, "metadata": None},
+            },
+        }
+        session.save()
+        response = self.client.get("/compare/")
+        self.assertIn(b"Re-analyze", response.content)
+
+    def test_get_with_stale_resume_shows_banner(self):
+        session = self.client.session
+        session["shared_resume"] = {"resume_text": "new", "resume_filename": None, "version": 2}
+        session["compare"] = {
+            "resume_text": "old",
+            "jds": {"abc": {"jd_text": "job", "analysis": "done", "metadata": None}},
+            "resume_version": 1,
+        }
+        session.save()
+        response = self.client.get("/compare/")
+        self.assertContains(response, "resume has changed")
+
+    def test_reset_clears_session(self):
+        session = self.client.session
+        session["compare"] = {"resume_text": "My resume.", "jds": {"x": {}}}
+        session.save()
+        self.client.post("/compare/reset/")
+        self.assertNotIn("compare", self.client.session)
+
+    def test_reset_returns_hx_redirect(self):
+        response = self.client.post("/compare/reset/")
+        self.assertEqual(response["HX-Redirect"], "/compare/")
+
+
+class ReanalyzeTests(TestCase):
+
+    def _seed_with_incomplete_jd(self, jd_id="abc-123"):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {jd_id: {"jd_text": "some job", "analysis": None, "metadata": None}},
+        }
+        session.save()
+
+    def test_reanalyze_returns_sse_card(self):
+        self._seed_with_incomplete_jd()
+        response = self.client.post("/compare/reanalyze/abc-123/")
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("sse-connect", content)
+        self.assertIn("card-abc-123", content)
+
+    def test_reanalyze_stores_nonce_in_session(self):
+        self._seed_with_incomplete_jd()
+        self.client.post("/compare/reanalyze/abc-123/")
+        nonce_keys = [k for k in self.client.session.keys() if k not in ("compare", "_auth_user_id")]
+        self.assertTrue(any(
+            isinstance(self.client.session[k], dict) and "jd_id" in self.client.session[k]
+            for k in nonce_keys
+        ))
+
+    def test_reanalyze_no_session_returns_400(self):
+        response = self.client.post("/compare/reanalyze/abc-123/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_reanalyze_unknown_jd_returns_400(self):
+        self._seed_with_incomplete_jd("real-id")
+        response = self.client.post("/compare/reanalyze/nonexistent/")
+        self.assertEqual(response.status_code, 400)

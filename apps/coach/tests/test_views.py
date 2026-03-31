@@ -250,13 +250,86 @@ class CoachIndexTests(TestCase):
         response = self.client.get("/coach/")
         self.assertEqual(response.status_code, 200)
 
-    def test_get_clears_existing_coach_session(self):
+    def test_get_with_empty_session_returns_intro(self):
+        response = self.client.get("/coach/")
+        self.assertIn(b"Resume Coach", response.content)
+        self.assertNotIn(b"coach-grid", response.content)
+
+    def test_get_with_experiences_restores_split_screen(self):
         _seed_coach_session(self.client)
+        response = self.client.get("/coach/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Acme Corp", response.content)
+        self.assertIn(b"coach-grid", response.content)
+
+    def test_get_with_experiences_preserves_session(self):
+        _seed_coach_session(self.client)
+        self.client.get("/coach/")
         self.assertIn("coach", self.client.session)
 
+    def test_get_with_empty_experiences_clears_session(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["experiences"] = []
+        session.save()
         self.client.get("/coach/")
-
         self.assertNotIn("coach", self.client.session)
+
+    def test_get_with_history_renders_messages(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [
+            {"role": "user", "content": "Built pipelines."},
+            {"role": "assistant", "content": "Tell me about achievements."},
+        ]
+        session.save()
+        response = self.client.get("/coach/")
+        self.assertIn(b"Tell me about achievements.", response.content)
+
+    def test_get_with_history_skips_initial_user_message(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [
+            {"role": "user", "content": "HIDDEN INITIAL TRIGGER"},
+            {"role": "assistant", "content": "What were your achievements?"},
+        ]
+        session.save()
+        response = self.client.get("/coach/")
+        self.assertNotIn(b"HIDDEN INITIAL TRIGGER", response.content)
+        self.assertIn(b"What were your achievements?", response.content)
+
+    def test_get_strips_rewrite_tags_from_assistant_message(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [
+            {"role": "user", "content": "Built pipelines."},
+            {"role": "assistant", "content": "Here is the rewrite:\n<rewrite>Led a team of 5 engineers.</rewrite>"},
+        ]
+        session.save()
+        content = self.client.get("/coach/").content.decode()
+        self.assertNotIn("<rewrite>", content)
+        self.assertIn("Led a team of 5 engineers.", content)
+
+    def test_get_sets_data_rewrite_attribute_on_assistant_message(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["coach"]["conversations"]["0"] = [
+            {"role": "user", "content": "Built pipelines."},
+            {"role": "assistant", "content": "Here:\n<rewrite>Led a team.</rewrite>"},
+        ]
+        session.save()
+        content = self.client.get("/coach/").content.decode()
+        self.assertIn('data-rewrite=', content)
+        self.assertIn("Led a team.", content)
+
+    def test_reset_clears_session(self):
+        _seed_coach_session(self.client)
+        self.client.post("/coach/reset/")
+        self.assertNotIn("coach", self.client.session)
+
+    def test_reset_returns_hx_redirect(self):
+        response = self.client.post("/coach/reset/")
+        self.assertEqual(response["HX-Redirect"], "/coach/")
 
 
 class CoachParseTests(TestCase):

@@ -314,7 +314,7 @@
       text-align: right;
       padding-top: 1rem;
     }
-    .start-over a {
+    .start-over a, .start-over-btn {
       font-size: 0.72rem;
       font-weight: 500;
       letter-spacing: 0.1em;
@@ -324,7 +324,14 @@
       opacity: 0.5;
       transition: opacity 0.15s;
     }
-    .start-over a:hover { opacity: 1; }
+    .start-over a:hover, .start-over-btn:hover { opacity: 1; }
+    .start-over-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      padding: 0;
+    }
   </style>
 
   {% if stale_resume %}
@@ -360,7 +367,54 @@
             <th></th>
           </tr>
         </thead>
-        <tbody id="summary-tbody"></tbody>
+        <tbody id="summary-tbody">
+          {% for jd in jds_for_restore %}
+            {% if jd.metadata %}
+            <tr id="summary-row-{{ jd.jd_id }}" data-score-high="{{ jd.metadata.score_high }}">
+              <td>{{ jd.jd_num }}</td>
+              <td>{{ jd.metadata.company }} · {{ jd.metadata.title }}</td>
+              <td>
+                <span class="score-badge">{{ jd.metadata.score_low }}–{{ jd.metadata.score_high }} / 100</span>
+                <span class="best-star" aria-label="Best score">★</span>
+              </td>
+              <td>Done</td>
+              <td>
+                <button class="remove-btn"
+                  hx-post="/compare/remove-jd/"
+                  hx-vals='{"jd_id": "{{ jd.jd_id }}"}'
+                  hx-include="[name=csrfmiddlewaretoken]"
+                  hx-target="#summary-row-{{ jd.jd_id }}"
+                  hx-swap="delete"
+                  hx-confirm="Remove this analysis?">Remove</button>
+              </td>
+            </tr>
+            {% elif jd.analysis_html %}
+            <tr id="summary-row-{{ jd.jd_id }}" data-score-high="-1">
+              <td>{{ jd.jd_num }}</td>
+              <td>—</td>
+              <td>—</td>
+              <td>Done</td>
+              <td>
+                <button class="remove-btn"
+                  hx-post="/compare/remove-jd/"
+                  hx-vals='{"jd_id": "{{ jd.jd_id }}"}'
+                  hx-include="[name=csrfmiddlewaretoken]"
+                  hx-target="#summary-row-{{ jd.jd_id }}"
+                  hx-swap="delete"
+                  hx-confirm="Remove this analysis?">Remove</button>
+              </td>
+            </tr>
+            {% else %}
+            <tr id="summary-row-{{ jd.jd_id }}" data-score-high="-1">
+              <td>{{ jd.jd_num }}</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span class="status-analyzing">Pending</span></td>
+              <td></td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
       </table>
     </div>
 
@@ -385,12 +439,41 @@
       </form>
     </div>
 
-    <!-- Analysis cards -->
-    <div id="jd-cards"></div>
+    <!-- Analysis cards (restored + newly added) -->
+    <div id="jd-cards">
+      {% for jd in jds_for_restore %}
+      <div class="analysis-card" id="card-{{ jd.jd_id }}">
+        <div class="card-top-bar"></div>
+        <div class="card-header">
+          <span class="card-title">
+            {% if jd.metadata %}{{ jd.metadata.company }} · {{ jd.metadata.title }}{% else %}Job {{ jd.jd_num }}{% endif %}
+          </span>
+          {% if not jd.analysis_html %}
+          <form hx-post="/compare/reanalyze/{{ jd.jd_id }}/"
+                hx-target="#card-{{ jd.jd_id }}"
+                hx-swap="outerHTML"
+                hx-encoding="multipart/form-data"
+                style="margin:0">
+            {% csrf_token %}
+            <button type="submit" class="action-btn" style="font-size:0.7rem;padding:0.4rem 0.875rem;">Re-analyze</button>
+          </form>
+          {% endif %}
+        </div>
+        {% if jd.analysis_html %}
+        <div class="analysis-result">{{ jd.analysis_html|safe }}</div>
+        {% else %}
+        <div class="stream-status" style="padding:1rem 1.5rem;padding-bottom:1.25rem;">Not analyzed</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
 
     <div class="start-over">
       {% if shared_resume %}<a href="/?change=1" style="margin-right:1rem">Change resume</a>{% endif %}
-      <a href="/compare/">↩ Start over</a>
+      <form hx-post="/compare/reset/" hx-encoding="multipart/form-data" style="display:inline;margin:0">
+        {% csrf_token %}
+        <button type="submit" class="start-over-btn">↩ Start over</button>
+      </form>
     </div>
 
   </div>

@@ -38,12 +38,72 @@ def _is_stale(session, coach_session: dict) -> bool:
     return shared_version > tool_version
 
 
+def _process_assistant_message(content: str) -> dict:
+    """Mirror the stream view's rewrite extraction for restoring conversation history."""
+    from html import escape as html_escape
+    rewrite_match = re.search(r'<rewrite>(.*?)</rewrite>', content, re.DOTALL | re.IGNORECASE)
+    if rewrite_match:
+        rewrite_text = rewrite_match.group(1).strip()
+        display_content = re.sub(
+            r'<rewrite>(.*?)</rewrite>', r'\1', content,
+            flags=re.DOTALL | re.IGNORECASE,
+        ).strip()
+        # Encode for safe use in an HTML data attribute (mirrors stream view encoding)
+        rewrite_attr = html_escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
+    else:
+        display_content = content
+        rewrite_attr = None
+    return {"role": "assistant", "display_content": display_content, "rewrite_attr": rewrite_attr}
+
+
+def _build_experiences_with_history(experiences: list[WorkExperience], conversations: dict) -> list[dict]:
+    result = []
+    for i, exp in enumerate(experiences):
+        history = conversations.get(str(i), [])
+        # Skip the first user message (hidden initial trigger sent by the chat view)
+        raw_display = history[1:] if history and history[0]["role"] == "user" else history
+        processed = [
+            _process_assistant_message(m["content"]) if m["role"] == "assistant"
+            else {"role": "user", "display_content": m["content"], "rewrite_attr": None}
+            for m in raw_display
+        ]
+        result.append({
+            "exp": exp,
+            "index": i,
+            "display_history": processed,
+        })
+    return result
+
+
 def index(request):
+    coach = request.session.get("coach")
+    if coach and coach.get("experiences"):
+        experiences = [WorkExperience(**e) for e in coach["experiences"]]
+        stale_resume = _is_stale(request.session, coach)
+        experiences_with_history = _build_experiences_with_history(
+            experiences, coach.get("conversations", {})
+        )
+        return render(request, "coach/index.html", {
+            **panel_context(request.session),
+            "active_tool": "coach",
+            "restore": True,
+            "experiences_with_history": experiences_with_history,
+            "cv_text": coach["cv_text"],
+            "stale_resume": stale_resume,
+        })
     request.session.pop("coach", None)
     return render(request, "coach/index.html", {
         **panel_context(request.session),
         "active_tool": "coach",
     })
+
+
+@require_POST
+def reset(request):
+    request.session.pop("coach", None)
+    response = HttpResponse()
+    response["HX-Redirect"] = "/coach/"
+    return response
 
 
 def workspace(request):
@@ -52,10 +112,13 @@ def workspace(request):
         return HttpResponseRedirect("/coach/")
     experiences = [WorkExperience(**e) for e in coach["experiences"]]
     stale_resume = _is_stale(request.session, coach)
+    experiences_with_history = _build_experiences_with_history(
+        experiences, coach.get("conversations", {})
+    )
     return render(request, "coach/split_screen.html", {
         **panel_context(request.session),
         "active_tool": "coach",
-        "experiences": experiences,
+        "experiences_with_history": experiences_with_history,
         "cv_text": coach["cv_text"],
         "stale_resume": stale_resume,
     })
@@ -87,11 +150,12 @@ def parse(request):
         "resume_version": resume_version,
     }
 
+    experiences_with_history = _build_experiences_with_history(experiences, existing_conversations)
     return render(request, "coach/split_screen.html", {
         **panel_context(request.session),
         "active_tool": "coach",
         "cv_text": cv_text,
-        "experiences": experiences,
+        "experiences_with_history": experiences_with_history,
         "stale_resume": False,
     })
 
