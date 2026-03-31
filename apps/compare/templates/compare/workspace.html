@@ -328,7 +328,7 @@
   </style>
 
   {% if stale_resume %}
-  <div id="stale-banner-area" style="background:rgba(201,168,76,0.12);border-left:3px solid var(--gold,#c9a84c);padding:0.75rem 1.25rem;font-size:0.875rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+  <div id="stale-banner-area" style="flex-shrink:0;background:rgba(201,168,76,0.12);border-left:3px solid var(--gold,#c9a84c);padding:0.75rem 1.25rem;font-size:0.875rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
     <span><strong>Resume updated</strong> — your shared resume has changed since the last parse. Re-parse to apply it.</span>
     <form hx-post="/compare/parse-resume/"
           hx-target="#main-content"
@@ -341,9 +341,10 @@
     </form>
   </div>
   {% else %}
-  <div id="stale-banner-area"></div>
+  <div id="stale-banner-area" style="flex-shrink:0;"></div>
   {% endif %}
 
+  <div style="flex:1;overflow-y:auto;">
   <div id="compare-workspace" class="workspace">
 
     <!-- Summary table -->
@@ -392,6 +393,7 @@
       <a href="/compare/">↩ Start over</a>
     </div>
 
+  </div>
   </div>
 
   <script>
