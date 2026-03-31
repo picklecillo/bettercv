@@ -3,7 +3,7 @@ import logging
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared.session import (
@@ -117,6 +117,27 @@ def build_resume_pdf(request):
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="resume.pdf"'
     return response
+
+
+@require_GET
+def render_preview_from_session(request):
+    """Re-render the preview panel from the YAML already in session (no body needed)."""
+    yaml_content = get_shared_yaml(request.session)
+    if not yaml_content:
+        return HttpResponse("No YAML in session.", status=400)
+
+    try:
+        html_content = get_builder().render_html(
+            yaml_content, request.session.session_key or "panel"
+        )
+    except RenderCVBuildError as e:
+        ctx = {**_panel_context(request), "render_error": str(e)}
+        return render(request, "home/_panel_editor.html", ctx, status=422)
+
+    set_shared_html(request.session, html_content)
+    request.session.save()
+
+    return render(request, "home/_panel_preview.html", _panel_context(request))
 
 
 def show_resume_editor(request):
