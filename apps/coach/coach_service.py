@@ -60,7 +60,7 @@ Original description:
 
 Your goal:
 1. Ask targeted questions to draw out specific achievements, metrics, and impact from this role.
-2. Once you have enough detail (typically after 2–4 questions), propose a paragraph-form rewrite that leads with impact and uses strong action verbs.
+2. Once you have enough detail (typically after 2–4 questions), propose a bullet-point rewrite (one bullet per key achievement) that leads with impact and uses strong action verbs. Use `-` for each bullet.
 3. Incorporate any feedback the candidate gives in subsequent turns.
 
 IMPORTANT: Whenever you propose a rewritten description, wrap the rewrite text in <rewrite> and </rewrite> tags so it can be extracted and displayed separately. Everything outside those tags is conversational text. For example:
@@ -68,7 +68,8 @@ IMPORTANT: Whenever you propose a rewritten description, wrap the rewrite text i
 Here's a stronger version of your description:
 
 <rewrite>
-Led the migration of legacy infrastructure to AWS, reducing deployment time by 60% and cutting infrastructure costs by $200K annually. Collaborated with 3 cross-functional teams to define migration strategy and ensure zero-downtime rollout.
+- Led the migration of legacy infrastructure to AWS, reducing deployment time by 60% and cutting infrastructure costs by $200K annually.
+- Collaborated with 3 cross-functional teams to define migration strategy and ensure zero-downtime rollout.
 </rewrite>
 
 Let me know if you'd like to adjust the tone or emphasise different achievements.
