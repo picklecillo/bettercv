@@ -8,5 +8,6 @@ urlpatterns = [
     path("chat/", views.chat, name="coach-chat"),
     path("stream/", views.stream, name="coach-stream"),
     path("conversation/<int:exp_index>/", views.conversation, name="coach-conversation"),
+    path("apply/", views.apply, name="coach-apply"),
     path("reset/", views.reset, name="coach-reset"),
 ]

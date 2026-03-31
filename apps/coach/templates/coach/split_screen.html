@@ -220,6 +220,10 @@
     }
     .copy-btn:hover { border-color: var(--gold); color: var(--ink); }
 
+    .apply-btn { border-color: var(--gold-lt); }
+    .apply-btn:hover:not(:disabled) { background: var(--gold-lt); border-color: var(--gold); color: var(--ink); }
+    .apply-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
     /* ── Streaming status ── */
     .stream-status {
       font-size: 0.78rem;
@@ -371,7 +375,15 @@
         <div id="we-updated-section" class="we-section" style="display:none">
           <div class="we-section-label">
             Updated description
-            <button class="copy-btn" onclick="copyUpdated()">Copy</button>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+              <button class="copy-btn" onclick="copyUpdated()">Copy</button>
+              <button class="copy-btn apply-btn" id="apply-to-resume-btn"
+                      onclick="applyToResume()"
+                      {% if not shared_yaml %}disabled title="Generate your resume in the Writer tab first"{% endif %}>
+                Apply to Resume
+              </button>
+              <span id="apply-feedback" style="font-size:0.68rem;font-weight:600;letter-spacing:0.08em;display:none"></span>
+            </div>
           </div>
           <div id="we-updated-body" class="we-description-body"></div>
         </div>
@@ -487,6 +499,47 @@
     function copyUpdated() {
       var text = document.getElementById('we-updated-body').textContent;
       navigator.clipboard.writeText(text);
+    }
+
+    function applyToResume() {
+      if (activeExpIdx === null || !weRewrites[activeExpIdx]) return;
+      var btn = document.getElementById('apply-to-resume-btn');
+      var feedback = document.getElementById('apply-feedback');
+      btn.disabled = true;
+      feedback.style.display = 'none';
+
+      fetch('/coach/apply/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrf(),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          exp_index: String(activeExpIdx),
+          rewrite_text: weRewrites[activeExpIdx],
+        }),
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          feedback.textContent = '✓ Applied';
+          feedback.style.color = 'var(--gold)';
+          feedback.style.display = 'inline';
+          setTimeout(function() { feedback.style.display = 'none'; }, 2500);
+          htmx.ajax('GET', '/resume/preview/', { target: '#resume-panel', swap: 'innerHTML' });
+        } else {
+          feedback.textContent = data.error || 'Update failed.';
+          feedback.style.color = '#e53e3e';
+          feedback.style.display = 'inline';
+        }
+        btn.disabled = false;
+      })
+      .catch(function() {
+        feedback.textContent = 'Network error.';
+        feedback.style.color = '#e53e3e';
+        feedback.style.display = 'inline';
+        btn.disabled = false;
+      });
     }
 
     // Watch for new assistant messages with rewrite content

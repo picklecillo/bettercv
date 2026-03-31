@@ -438,6 +438,87 @@ class CoachParseTests(TestCase):
         )
 
 
+SAMPLE_YAML = """\
+cv:
+  name: Jane Smith
+  sections:
+    experience:
+      - company: Acme Corp
+        position: Senior Engineer
+        highlights:
+          - Old bullet.
+"""
+
+
+class CoachApplyTests(TestCase):
+
+    def _seed_with_yaml(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["shared_yaml"] = SAMPLE_YAML
+        session.save()
+
+    def _post_apply(self, exp_index="0", rewrite_text="- New bullet.\n- Another bullet."):
+        return self.client.post(
+            "/coach/apply/",
+            {"exp_index": exp_index, "rewrite_text": rewrite_text},
+        )
+
+    def test_success_returns_ok_json(self):
+        self._seed_with_yaml()
+        response = self._post_apply()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"ok": True})
+
+    def test_success_updates_shared_yaml_in_session(self):
+        self._seed_with_yaml()
+        self._post_apply(rewrite_text="- New bullet.\n- Another bullet.")
+        from ruamel.yaml import YAML
+        data = YAML().load(self.client.session["shared_yaml"])
+        highlights = data["cv"]["sections"]["experience"][0]["highlights"]
+        self.assertEqual(highlights, ["New bullet.", "Another bullet."])
+
+    def test_success_clears_shared_html(self):
+        self._seed_with_yaml()
+        session = self.client.session
+        session["shared_html"] = "<p>old html</p>"
+        session.save()
+        self._post_apply()
+        self.assertNotIn("shared_html", self.client.session)
+
+    def test_no_coach_session_returns_400(self):
+        response = self._post_apply()
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+
+    def test_no_shared_yaml_returns_409(self):
+        _seed_coach_session(self.client)
+        response = self._post_apply()
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(response.json()["ok"])
+
+    def test_invalid_exp_index_returns_400(self):
+        self._seed_with_yaml()
+        response = self._post_apply(exp_index="99")
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+
+    def test_experience_not_in_yaml_returns_404(self):
+        _seed_coach_session(self.client)
+        session = self.client.session
+        session["shared_yaml"] = "cv:\n  name: Jane\n  sections:\n    experience: []\n"
+        session.save()
+        response = self._post_apply()
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.json()["ok"])
+
+    def test_empty_rewrite_text_returns_400(self):
+        self._seed_with_yaml()
+        response = self._post_apply(rewrite_text="   ")
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["ok"])
+
+
 class CoachWorkspaceTests(TestCase):
 
     def test_redirects_to_index_when_no_session(self):

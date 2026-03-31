@@ -2,7 +2,7 @@ import dataclasses
 import re
 import uuid
 
-from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
@@ -11,6 +11,7 @@ from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared.session import get_resume_version, get_shared_resume, panel_context
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
+from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -284,6 +285,55 @@ def stream(request):
     response["Cache-Control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"
     return response
+
+
+@require_POST
+def apply(request):
+    coach = request.session.get("coach")
+    if not coach:
+        return JsonResponse({"ok": False, "error": "Session expired. Please re-upload your CV."}, status=400)
+
+    try:
+        exp_index = int(request.POST.get("exp_index", ""))
+        experience_data = coach["experiences"][exp_index]
+    except (ValueError, IndexError):
+        return JsonResponse({"ok": False, "error": "Invalid experience selected."}, status=400)
+
+    rewrite_text = request.POST.get("rewrite_text", "").strip()
+    if not rewrite_text:
+        return JsonResponse({"ok": False, "error": "No rewrite text provided."}, status=400)
+
+    shared_yaml = request.session.get("shared_yaml")
+    if not shared_yaml:
+        return JsonResponse(
+            {"ok": False, "error": "No resume YAML found. Generate your resume in the Writer tab first."},
+            status=409,
+        )
+
+    experience = WorkExperience(**experience_data)
+
+    try:
+        updated_yaml = apply_experience_highlights(
+            shared_yaml,
+            company=experience.company,
+            position=experience.title,
+            rewrite_text=rewrite_text,
+        )
+    except ExperienceNotFoundError:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": f"Could not find '{experience.title}' at '{experience.company}' in the resume YAML.",
+            },
+            status=404,
+        )
+
+    request.session["shared_yaml"] = updated_yaml
+    request.session.pop("shared_html", None)
+    request.session.modified = True
+    request.session.save()
+
+    return JsonResponse({"ok": True})
 
 
 def conversation(request, exp_index: int):
