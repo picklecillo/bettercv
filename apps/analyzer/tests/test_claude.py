@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 import anthropic
 from django.test import TestCase
 
-from apps.analyzer.claude import ClaudeService, ClaudeServiceError, _MODEL
+from apps.analyzer.claude import ClaudeService, ClaudeServiceError
+from apps.shared.claude import MODEL as _MODEL
 
 
 class ClaudeServiceTests(TestCase):

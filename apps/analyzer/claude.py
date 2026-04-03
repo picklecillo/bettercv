@@ -1,26 +1,21 @@
 import anthropic
 from collections.abc import Iterator
-from django.conf import settings
 
+from apps.shared.claude import (
+    MODEL,
+    ClaudeServiceError,
+    make_client,
+    translate_api_error,
+    translate_connection_error,
+)
 
-class ClaudeServiceError(Exception):
-    def __init__(self, message: str, status: int) -> None:
-        super().__init__(message)
-        self.message = message
-        self.status = status
+# Re-export for backward compatibility with existing imports
+__all__ = ["ClaudeService", "ClaudeServiceError", "get_service"]
 
+# Backward-compat alias used in tests
+_MODEL = MODEL
 
-_ERROR_MESSAGES: dict[str, tuple[str, int]] = {
-    "authentication_error":  ("Invalid API key. Check your ANTHROPIC_API_KEY.", 502),
-    "permission_error":      ("Your API key doesn't have permission to use this model.", 502),
-    "invalid_request_error": ("Bad request sent to Claude API.", 502),
-    "not_found_error":       ("Claude model not found.", 502),
-    "rate_limit_error":      ("Rate limit hit. Please wait a moment and try again.", 502),
-    "api_error":             ("Claude API internal error. Please try again.", 502),
-    "overloaded_error":      ("Claude is currently overloaded. Please try again shortly.", 502),
-}
-
-SYSTEM_PROMPT = """You are an expert ATS (Applicant Tracking System) analyst and resume coach.
+ATS_SYSTEM_PROMPT = """You are an expert ATS (Applicant Tracking System) analyst and resume coach.
 Your job is to analyze how well a resume matches a job description and provide
 a detailed, structured analysis in markdown format.
 
@@ -33,7 +28,7 @@ Always structure your response with these exact sections:
 
 Be specific, honest, and actionable. Do not pad the analysis."""
 
-USER_PROMPT = """Here is the resume:
+ATS_USER_PROMPT = """Here is the resume:
 
 {resume_text}
 
@@ -47,7 +42,10 @@ Here is the job description:
 
 Please provide a detailed ATS analysis."""
 
-_MODEL = "claude-sonnet-4-20250514"
+# Legacy names kept for any direct imports
+SYSTEM_PROMPT = ATS_SYSTEM_PROMPT
+USER_PROMPT = ATS_USER_PROMPT
+
 _MAX_TOKENS = 2000
 
 
@@ -58,46 +56,37 @@ class ClaudeService:
     def analyze(self, resume_text: str, jd_text: str) -> str:
         try:
             message = self._client.messages.create(
-                model=_MODEL,
+                model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": USER_PROMPT.format(
+                system=ATS_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,
                 )}],
             )
         except anthropic.APIStatusError as e:
-            raise self._translate(e) from e
+            raise translate_api_error(e) from e
         except anthropic.APIConnectionError as e:
-            raise ClaudeServiceError(
-                "Could not reach the Claude API. Check your internet connection.", 503
-            ) from e
+            raise translate_connection_error(e) from e
         return message.content[0].text
 
-    @staticmethod
-    def _translate(e: anthropic.APIStatusError) -> ClaudeServiceError:
-        if "credit balance is too low" in str(e):
-            return ClaudeServiceError(
-                "Your Anthropic credit balance is too low. "
-                "Please add credits at console.anthropic.com.",
-                402,
-            )
-        error_type = (e.body or {}).get("error", {}).get("type", "")
-        msg, status = _ERROR_MESSAGES.get(error_type, (str(e), 502))
-        return ClaudeServiceError(msg, status)
-
     def stream(self, resume_text: str, jd_text: str) -> Iterator[str]:
-        with self._client.messages.stream(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": USER_PROMPT.format(
-                resume_text=resume_text,
-                jd_text=jd_text,
-            )}],
-        ) as s:
-            yield from s.text_stream
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=ATS_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
+                    resume_text=resume_text,
+                    jd_text=jd_text,
+                )}],
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
 
 
 def get_service() -> ClaudeService:
-    return ClaudeService(anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))
+    return ClaudeService(make_client())

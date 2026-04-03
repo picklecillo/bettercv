@@ -56,7 +56,8 @@ class WriterServiceTests(TestCase):
         self.assertEqual(assistant_messages[0]["content"], _PREFILL)
 
     def test_stream_yaml_uses_correct_model_and_max_tokens(self):
-        from apps.writer.writer_service import WriterService, _MODEL, _MAX_TOKENS
+        from apps.writer.writer_service import WriterService, _MAX_TOKENS
+        from apps.shared.claude import MODEL as _MODEL
         client = MagicMock(spec=anthropic.Anthropic)
         stream_ctx = MagicMock()
         stream_ctx.__enter__ = lambda s: s

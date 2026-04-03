@@ -1,7 +1,16 @@
 import anthropic
 from collections.abc import Iterator
 from dataclasses import dataclass
-from django.conf import settings
+
+from apps.analyzer.claude import ATS_SYSTEM_PROMPT, ATS_USER_PROMPT
+from apps.shared.claude import (
+    MODEL,
+    make_client,
+    translate_api_error,
+    translate_connection_error,
+)
+
+_MAX_TOKENS = 2000
 
 
 class CompareMetadataError(Exception):
@@ -15,36 +24,6 @@ class JDMetadata:
     score_low: int
     score_high: int
 
-
-_MODEL = "claude-sonnet-4-20250514"
-_MAX_TOKENS = 2000
-
-_SYSTEM_PROMPT = """You are an expert ATS (Applicant Tracking System) analyst and resume coach.
-Your job is to analyze how well a resume matches a job description and provide
-a detailed, structured analysis in markdown format.
-
-Always structure your response with these exact sections:
-1. ## Estimated ATS Score (X–Y / 100)
-2. ## Keyword Matches (table with: Requirement | Status | Notes)
-3. ## Missing Keywords (table with: Missing Term | Why It Matters)
-4. ## Quick Wins (specific, actionable improvements)
-5. ## Overall Summary (2–3 sentences)
-
-Be specific, honest, and actionable. Do not pad the analysis."""
-
-_USER_PROMPT = """Here is the resume:
-
-{resume_text}
-
----
-
-Here is the job description:
-
-{jd_text}
-
----
-
-Please provide a detailed ATS analysis."""
 
 _METADATA_TOOL = {
     "name": "extract_jd_metadata",
@@ -75,28 +54,39 @@ class CompareService:
         self._client = client
 
     def stream_analysis(self, resume_text: str, jd_text: str) -> Iterator[str]:
-        with self._client.messages.stream(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": _USER_PROMPT.format(
-                resume_text=resume_text,
-                jd_text=jd_text,
-            )}],
-        ) as s:
-            yield from s.text_stream
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=ATS_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
+                    resume_text=resume_text,
+                    jd_text=jd_text,
+                )}],
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
 
     def extract_metadata(self, analysis_text: str, jd_text: str = "") -> JDMetadata:
-        response = self._client.messages.create(
-            model=_MODEL,
-            max_tokens=256,
-            tools=[_METADATA_TOOL],
-            tool_choice={"type": "tool", "name": "extract_jd_metadata"},
-            messages=[{"role": "user", "content": _METADATA_PROMPT.format(
-                analysis_text=analysis_text,
-                jd_text=jd_text,
-            )}],
-        )
+        try:
+            response = self._client.messages.create(
+                model=MODEL,
+                max_tokens=256,
+                tools=[_METADATA_TOOL],
+                tool_choice={"type": "tool", "name": "extract_jd_metadata"},
+                messages=[{"role": "user", "content": _METADATA_PROMPT.format(
+                    analysis_text=analysis_text,
+                    jd_text=jd_text,
+                )}],
+            )
+        except anthropic.APIStatusError as e:
+            raise CompareMetadataError(translate_api_error(e).message) from e
+        except anthropic.APIConnectionError as e:
+            raise CompareMetadataError(translate_connection_error(e).message) from e
+
         tool_block = next(
             (b for b in response.content if b.type == "tool_use"),
             None,
@@ -113,4 +103,4 @@ class CompareService:
 
 
 def get_compare_service() -> CompareService:
-    return CompareService(anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))
+    return CompareService(make_client())

@@ -1,9 +1,14 @@
 from collections.abc import Iterator
 
 import anthropic
-from django.conf import settings
 
-_MODEL = "claude-sonnet-4-20250514"
+from apps.shared.claude import (
+    MODEL,
+    make_client,
+    translate_api_error,
+    translate_connection_error,
+)
+
 _MAX_TOKENS = 4000
 
 _SYSTEM_PROMPT = """You are a resume conversion assistant. Convert the user's resume into valid rendercv YAML.
@@ -93,17 +98,22 @@ class WriterService:
 
     def stream_yaml(self, resume_text: str) -> Iterator[str]:
         yield _PREFILL
-        with self._client.messages.stream(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=_SYSTEM_PROMPT,
-            messages=[
-                {"role": "user", "content": resume_text},
-                {"role": "assistant", "content": _PREFILL},
-            ],
-        ) as s:
-            yield from s.text_stream
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=_SYSTEM_PROMPT,
+                messages=[
+                    {"role": "user", "content": resume_text},
+                    {"role": "assistant", "content": _PREFILL},
+                ],
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
 
 
 def get_writer_service() -> WriterService:
-    return WriterService(anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))
+    return WriterService(make_client())

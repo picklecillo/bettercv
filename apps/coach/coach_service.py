@@ -1,7 +1,13 @@
 import anthropic
 from collections.abc import Iterator
 from dataclasses import dataclass
-from django.conf import settings
+
+from apps.shared.claude import (
+    MODEL,
+    make_client,
+    translate_api_error,
+    translate_connection_error,
+)
 
 
 class CoachParseError(Exception):
@@ -46,8 +52,6 @@ For each entry capture: company name, job title, dates (as written), and the ful
 CV:
 {cv_text}"""
 
-_MODEL = "claude-sonnet-4-20250514"
-
 _COACH_SYSTEM_PROMPT = """You are an expert resume coach helping a job seeker improve their CV.
 
 The candidate's work experience entry you are coaching:
@@ -82,13 +86,18 @@ class CoachService:
         self._client = client
 
     def parse_cv(self, cv_text: str) -> list[WorkExperience]:
-        response = self._client.messages.create(
-            model=_MODEL,
-            max_tokens=2000,
-            tools=[_EXTRACT_TOOL],
-            tool_choice={"type": "tool", "name": "extract_work_experiences"},
-            messages=[{"role": "user", "content": _PARSE_PROMPT.format(cv_text=cv_text)}],
-        )
+        try:
+            response = self._client.messages.create(
+                model=MODEL,
+                max_tokens=2000,
+                tools=[_EXTRACT_TOOL],
+                tool_choice={"type": "tool", "name": "extract_work_experiences"},
+                messages=[{"role": "user", "content": _PARSE_PROMPT.format(cv_text=cv_text)}],
+            )
+        except anthropic.APIStatusError as e:
+            raise CoachParseError(translate_api_error(e).message) from e
+        except anthropic.APIConnectionError as e:
+            raise CoachParseError(translate_connection_error(e).message) from e
 
         tool_block = next(
             (b for b in response.content if b.type == "tool_use"),
@@ -111,7 +120,6 @@ class CoachService:
             for e in raw
         ]
 
-
     def stream_reply(self, work_experience: WorkExperience, history: list[dict]) -> Iterator[str]:
         system_prompt = _COACH_SYSTEM_PROMPT.format(
             company=work_experience.company,
@@ -119,14 +127,19 @@ class CoachService:
             dates=work_experience.dates,
             original_description=work_experience.original_description,
         )
-        with self._client.messages.stream(
-            model=_MODEL,
-            max_tokens=2000,
-            system=system_prompt,
-            messages=history,
-        ) as s:
-            yield from s.text_stream
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=2000,
+                system=system_prompt,
+                messages=history,
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
 
 
 def get_coach_service() -> CoachService:
-    return CoachService(anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY))
+    return CoachService(make_client())
