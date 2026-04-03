@@ -1,12 +1,10 @@
-import uuid
-
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_shared_resume, panel_context
+from apps.shared import session as sess
 
 from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
@@ -22,7 +20,7 @@ def _error(message: str, status: int = 400) -> HttpResponse:
 
 def index(request):
     return render(request, "writer/index.html", {
-        **panel_context(request.session),
+        **sess.shared(request.session).panel_context(),
         "active_tool": "writer",
     })
 
@@ -39,21 +37,17 @@ def parse(request):
         if not resume_text:
             return _error("Please provide your resume (text or PDF).")
 
-    nonce = str(uuid.uuid4())
-    request.session[nonce] = {"resume_text": resume_text}
-    request.session.modified = True
-
-    return render(request, "writer/_step2.html", {"nonce": nonce})
+    nonce_key = sess.nonce(request.session).put({"resume_text": resume_text})
+    return render(request, "writer/_step2.html", {"nonce": nonce_key})
 
 
 @require_GET
 def stream(request):
     key = request.GET.get("key", "")
-    nonce_data = request.session.pop(key, None)
+    nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
 
-    request.session.modified = True
     resume_text = nonce_data["resume_text"]
 
     def event_stream():

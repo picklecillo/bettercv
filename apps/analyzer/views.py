@@ -1,4 +1,3 @@
-import uuid
 import markdown as md
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
@@ -6,7 +5,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_shared_resume, panel_context
+from apps.shared import session as sess
 
 from .claude import ClaudeServiceError, get_service
 
@@ -21,7 +20,7 @@ def _error(message: str, status: int = 400) -> HttpResponse:
 
 def index(request):
     return render(request, 'analyzer/index.html', {
-        **panel_context(request.session),
+        **sess.shared(request.session).panel_context(),
         "active_tool": "analyzer",
     })
 
@@ -43,8 +42,7 @@ def analyze(request):
     if not jd_text:
         return _error("Please provide a job description.")
 
-    key = str(uuid.uuid4())
-    request.session[key] = {"resume_text": resume_text, "jd_text": jd_text}
+    key = sess.nonce(request.session).put({"resume_text": resume_text, "jd_text": jd_text})
 
     return HttpResponse(
         f'<div id="sse-container"'
@@ -65,7 +63,7 @@ def analyze(request):
 
 def stream(request):
     key = request.GET.get("key", "")
-    data = request.session.pop(key, None)
+    data = sess.nonce(request.session).pop(key)
     if not data:
         return HttpResponse("Session expired. Please submit the form again.", status=400)
 

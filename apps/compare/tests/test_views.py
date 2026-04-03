@@ -5,11 +5,13 @@ from django.test import TestCase
 
 from apps.compare.compare_service import CompareMetadataError
 from apps.compare.tests.fakes import FAKE_METADATA, FakeCompareService
+from apps.shared import session as sess
 
 
 def _seed_compare_session(client, resume_text="My full resume."):
-    session = client.session
-    session["compare"] = {"resume_text": resume_text, "jds": {}}
+    session = client.session  # capture once — client.session creates a new object each access
+    store = sess.compare(session)
+    store.initialize(resume_text=resume_text, resume_version=None)
     session.save()
 
 

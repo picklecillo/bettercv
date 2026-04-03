@@ -5,16 +5,18 @@ from django.test import Client, TestCase
 
 from apps.coach.coach_service import CoachParseError
 from apps.coach.tests.fakes import FAKE_EXPERIENCES, FakeCoachService
+from apps.shared import session as sess
 
 
 def _seed_coach_session(client):
     """Store parsed experiences in the session as the parse view would."""
-    session = client.session
-    session["coach"] = {
-        "cv_text": "My full CV text.",
-        "experiences": [dataclasses.asdict(e) for e in FAKE_EXPERIENCES],
-        "conversations": {},
-    }
+    session = client.session  # capture once — client.session creates a new object each access
+    store = sess.coach(session)
+    store.initialize(
+        cv_text="My full CV text.",
+        experiences=[dataclasses.asdict(e) for e in FAKE_EXPERIENCES],
+        resume_version=None,
+    )
     session.save()
 
 

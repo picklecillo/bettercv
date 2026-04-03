@@ -7,7 +7,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_resume_version, get_shared_resume, panel_context
+from apps.shared import session as sess
 
 from .compare_service import CompareMetadataError, get_compare_service
 
@@ -20,19 +20,9 @@ def _error(message: str, status: int = 400) -> HttpResponse:
     )
 
 
-def _is_stale(session, compare_session: dict) -> bool:
-    shared_version = get_resume_version(session)
-    if shared_version is None:
-        return False
-    tool_version = compare_session.get("resume_version")
-    if tool_version is None:
-        return False
-    return shared_version > tool_version
-
-
-def _build_jds_for_restore(compare: dict) -> list[dict]:
+def _build_jds_for_restore(compare_store) -> list[dict]:
     result = []
-    for i, (jd_id, jd) in enumerate(compare["jds"].items(), start=1):
+    for i, (jd_id, jd) in enumerate(compare_store.all_jds(), start=1):
         analysis_html = None
         if jd.get("analysis"):
             analysis_html = md.markdown(jd["analysis"], extensions=["tables"])
@@ -47,19 +37,20 @@ def _build_jds_for_restore(compare: dict) -> list[dict]:
 
 
 def index(request):
-    compare = request.session.get("compare")
-    if compare and compare.get("jds"):
-        stale_resume = _is_stale(request.session, compare)
+    shared_store = sess.shared(request.session)
+    compare_store = sess.compare(request.session)
+    if compare_store.has_jds:
+        stale_resume = compare_store.is_stale(shared_store)
         return render(request, "compare/index.html", {
-            **panel_context(request.session),
+            **shared_store.panel_context(),
             "active_tool": "compare",
             "restore": True,
             "stale_resume": stale_resume,
-            "jds_for_restore": _build_jds_for_restore(compare),
+            "jds_for_restore": _build_jds_for_restore(compare_store),
         })
     request.session.pop("compare", None)
     return render(request, "compare/index.html", {
-        **panel_context(request.session),
+        **shared_store.panel_context(),
         "active_tool": "compare",
     })
 
@@ -73,14 +64,15 @@ def reset(request):
 
 
 def workspace(request):
-    compare = request.session.get("compare")
-    if not compare:
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
         return HttpResponseRedirect("/compare/")
-    stale_resume = _is_stale(request.session, compare)
+    shared_store = sess.shared(request.session)
+    stale_resume = compare_store.is_stale(shared_store)
     return render(request, "compare/workspace.html", {
-        **panel_context(request.session),
+        **shared_store.panel_context(),
         "active_tool": "compare",
-        "resume_text": compare["resume_text"],
+        "resume_text": compare_store.resume_text,
         "stale_resume": stale_resume,
     })
 
@@ -100,18 +92,18 @@ def parse_resume(request):
             return _error("Please provide your resume (text or PDF).")
 
     try:
-        resume_version = get_resume_version(request.session)
-        request.session["compare"] = {
-            "resume_text": resume_text,
-            "jds": {},
-            "resume_version": resume_version,
-        }
+        shared_store = sess.shared(request.session)
+        compare_store = sess.compare(request.session)
+        compare_store.initialize(
+            resume_text=resume_text,
+            resume_version=shared_store.resume_version,
+        )
     except Exception as e:
         return _error(str(e))
 
     try:
         return render(request, "compare/workspace.html", {
-            **panel_context(request.session),
+            **shared_store.panel_context(),
             "active_tool": "compare",
             "resume_text": resume_text,
             "stale_resume": False,
@@ -122,32 +114,27 @@ def parse_resume(request):
 
 @require_POST
 def add_jd(request):
-    compare = request.session.get("compare")
-    if not compare:
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
         return _error("Session expired. Please re-upload your resume.")
 
     jd_text = request.POST.get("jd_text", "").strip()
     if not jd_text:
         return _error("Please provide a job description.")
 
-    if len(compare["jds"]) >= 10:
+    if compare_store.jd_count() >= 10:
         return _error("Maximum of 10 job descriptions reached.")
 
     jd_id = str(uuid.uuid4())
-    nonce = str(uuid.uuid4())
+    compare_store.add_jd(jd_id, jd_text)
+    jd_num = compare_store.jd_count()
 
-    compare["jds"][jd_id] = {"jd_text": jd_text, "analysis": None, "metadata": None}
-    request.session.modified = True
-
-    jd_num = len(compare["jds"])
-
-    request.session[nonce] = {
+    nonce_key = sess.nonce(request.session).put({
         "jd_id": jd_id,
         "jd_num": jd_num,
-        "resume_text": compare["resume_text"],
+        "resume_text": compare_store.resume_text,
         "jd_text": jd_text,
-    }
-    request.session.modified = True
+    })
 
     # Primary response: <tr> into #summary-tbody.
     # HTMX wraps primary content in <template class="internal-htmx-wrapper"> before
@@ -174,7 +161,7 @@ def add_jd(request):
         f'<div hx-swap-oob="beforeend:#jd-cards">'
         f'  <div class="analysis-card" id="card-{jd_id}"'
         f'       hx-ext="sse"'
-        f'       sse-connect="/compare/stream/?key={nonce}"'
+        f'       sse-connect="/compare/stream/?key={nonce_key}"'
         f'       sse-close="done">'
         f'    <div class="card-top-bar streaming"></div>'
         f'    <div class="card-header">'
@@ -195,16 +182,18 @@ def add_jd(request):
 
 @require_POST
 def remove_jd(request):
-    compare = request.session.get("compare")
-    if not compare:
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
         return _error("Session expired. Please re-upload your resume.")
 
     jd_id = request.POST.get("jd_id", "")
-    if jd_id not in compare["jds"]:
+    if not compare_store.get_jd(jd_id):
         return _error("Unknown job description.", status=400)
 
+    compare = request.session.get("compare")
     del compare["jds"][jd_id]
-    request.session.modified = True
+    if hasattr(request.session, "modified"):
+        request.session.modified = True
 
     # Primary swap (hx-target="#summary-row-{jd_id}" hx-swap="delete") removes the row.
     # OOB delete removes the analysis card.
@@ -214,14 +203,12 @@ def remove_jd(request):
 
 def stream(request):
     key = request.GET.get("key", "")
-    nonce_data = request.session.pop(key, None)
+    nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
 
-    request.session.modified = True
-
-    compare = request.session.get("compare")
-    if not compare:
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
         return HttpResponse("Compare session expired. Please re-upload your resume.", status=400)
 
     jd_id = nonce_data["jd_id"]
@@ -230,7 +217,6 @@ def stream(request):
     jd_text = nonce_data["jd_text"]
 
     def event_stream():
-        import markdown as md
         accumulated = []
         errored = False
 
@@ -247,11 +233,7 @@ def stream(request):
         if not errored and accumulated:
             analysis_text = "".join(accumulated)
 
-            # Commit analysis to session
-            compare["jds"][jd_id]["analysis"] = analysis_text
-            request.session.modified = True
-
-            # Extract metadata
+            # Extract metadata before committing — set_jd_result commits both at once
             metadata_dict = None
             score_high_val = -1
             try:
@@ -263,14 +245,13 @@ def stream(request):
                     "score_high": meta.score_high,
                 }
                 score_high_val = meta.score_high
-                compare["jds"][jd_id]["metadata"] = metadata_dict
                 label = f"{escape(meta.company)} · {escape(meta.title)}"
                 score = f"{meta.score_low}–{meta.score_high} / 100"
             except CompareMetadataError:
                 label = "—"
                 score = "—"
 
-            request.session.save()
+            compare_store.set_jd_result(jd_id, analysis_text, metadata_dict)
 
             # metadata event: update summary row BEFORE wrap removes the listener
             remove_btn = (
@@ -315,29 +296,28 @@ def stream(request):
 
 @require_POST
 def reanalyze(request, jd_id: str):
-    compare = request.session.get("compare")
-    if not compare:
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
         return _error("Session expired. Please re-upload your resume.")
-    if jd_id not in compare["jds"]:
+
+    jd = compare_store.get_jd(jd_id)
+    if not jd:
         return _error("Unknown job description.", status=400)
 
-    jd = compare["jds"][jd_id]
     jd_text = jd["jd_text"]
-    jd_num = list(compare["jds"].keys()).index(jd_id) + 1
+    jd_num = list(compare_store.all_jds()).index((jd_id, jd)) + 1
 
-    nonce = str(uuid.uuid4())
-    request.session[nonce] = {
+    nonce_key = sess.nonce(request.session).put({
         "jd_id": jd_id,
         "jd_num": jd_num,
-        "resume_text": compare["resume_text"],
+        "resume_text": compare_store.resume_text,
         "jd_text": jd_text,
-    }
-    request.session.modified = True
+    })
 
     card_html = (
         f'<div class="analysis-card" id="card-{jd_id}"'
         f'     hx-ext="sse"'
-        f'     sse-connect="/compare/stream/?key={nonce}"'
+        f'     sse-connect="/compare/stream/?key={nonce_key}"'
         f'     sse-close="done">'
         f'  <div class="card-top-bar streaming"></div>'
         f'  <div class="card-header">'

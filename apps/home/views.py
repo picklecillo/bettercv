@@ -6,14 +6,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import (
-    get_shared_html,
-    get_shared_resume,
-    get_shared_yaml,
-    set_shared_html,
-    set_shared_resume,
-    set_shared_yaml,
-)
+from apps.shared import session as sess
 from apps.writer.rendercv_builder import RenderCVBuildError, get_builder
 from apps.writer.writer_service import get_writer_service
 
@@ -25,11 +18,7 @@ def landing(request):
 
 
 def _panel_context(request) -> dict:
-    return {
-        "shared_resume": get_shared_resume(request.session),
-        "shared_html": get_shared_html(request.session),
-        "shared_yaml": get_shared_yaml(request.session),
-    }
+    return sess.shared(request.session).panel_context()
 
 
 def index(request):
@@ -37,7 +26,7 @@ def index(request):
 
 
 def _panel_error(request, message):
-    shared = get_shared_resume(request.session)
+    shared = sess.shared(request.session).resume
     return render(
         request,
         "home/_panel_upload.html",
@@ -74,7 +63,8 @@ def submit_resume(request):
                 content_type="text/html",
             )
 
-    set_shared_resume(request.session, resume_text, filename)
+    shared_store = sess.shared(request.session)
+    shared_store.set_resume(resume_text, filename)
 
     if source == "panel":
         # Generate YAML and render HTML preview synchronously.
@@ -90,8 +80,8 @@ def submit_resume(request):
             logger.error("Panel YAML/HTML generation failed: %s", e)
             return _panel_error(request, "Something went wrong generating your resume preview.")
 
-        set_shared_yaml(request.session, yaml_content)
-        set_shared_html(request.session, html_content)
+        shared_store.set_yaml(yaml_content)
+        shared_store.set_html(html_content)
         request.session.save()
 
         ctx = _panel_context(request)
@@ -105,7 +95,7 @@ def submit_resume(request):
 
 @require_POST
 def build_resume_pdf(request):
-    yaml_content = request.POST.get("yaml_content", "").strip() or get_shared_yaml(request.session)
+    yaml_content = request.POST.get("yaml_content", "").strip() or sess.shared(request.session).yaml
     if not yaml_content:
         return HttpResponse("No YAML content available.", status=400, content_type="text/plain")
 
@@ -122,7 +112,8 @@ def build_resume_pdf(request):
 @require_GET
 def render_preview_from_session(request):
     """Re-render the preview panel from the YAML already in session (no body needed)."""
-    yaml_content = get_shared_yaml(request.session)
+    shared_store = sess.shared(request.session)
+    yaml_content = shared_store.yaml
     if not yaml_content:
         return HttpResponse("No YAML in session.", status=400)
 
@@ -134,7 +125,7 @@ def render_preview_from_session(request):
         ctx = {**_panel_context(request), "render_error": str(e)}
         return render(request, "home/_panel_editor.html", ctx, status=422)
 
-    set_shared_html(request.session, html_content)
+    shared_store.set_html(html_content)
     request.session.save()
 
     return render(request, "home/_panel_preview.html", _panel_context(request))
@@ -166,8 +157,9 @@ def render_resume_html(request):
         }
         return render(request, "home/_panel_editor.html", ctx, status=422)
 
-    set_shared_yaml(request.session, yaml_content)
-    set_shared_html(request.session, html_content)
+    shared_store = sess.shared(request.session)
+    shared_store.set_yaml(yaml_content)
+    shared_store.set_html(html_content)
     request.session.save()
 
     ctx = _panel_context(request)

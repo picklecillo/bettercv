@@ -1,6 +1,5 @@
 import dataclasses
 import re
-import uuid
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
@@ -8,7 +7,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
-from apps.shared.session import get_resume_version, get_shared_resume, panel_context
+from apps.shared import session as sess
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
@@ -22,23 +21,6 @@ def _error(message: str, status: int = 400) -> HttpResponse:
     )
 
 
-def _experiences_from_session(session) -> list[WorkExperience] | None:
-    coach = session.get("coach")
-    if not coach:
-        return None
-    return [WorkExperience(**e) for e in coach["experiences"]]
-
-
-def _is_stale(session, coach_session: dict) -> bool:
-    shared_version = get_resume_version(session)
-    if shared_version is None:
-        return False
-    tool_version = coach_session.get("resume_version")
-    if tool_version is None:
-        return False
-    return shared_version > tool_version
-
-
 def _process_assistant_message(content: str) -> dict:
     """Mirror the stream view's rewrite extraction for restoring conversation history."""
     from html import escape as html_escape
@@ -49,7 +31,6 @@ def _process_assistant_message(content: str) -> dict:
             r'<rewrite>(.*?)</rewrite>', r'\1', content,
             flags=re.DOTALL | re.IGNORECASE,
         ).strip()
-        # Encode for safe use in an HTML data attribute (mirrors stream view encoding)
         rewrite_attr = html_escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
     else:
         display_content = content
@@ -77,24 +58,25 @@ def _build_experiences_with_history(experiences: list[WorkExperience], conversat
 
 
 def index(request):
-    coach = request.session.get("coach")
-    if coach and coach.get("experiences"):
-        experiences = [WorkExperience(**e) for e in coach["experiences"]]
-        stale_resume = _is_stale(request.session, coach)
+    shared_store = sess.shared(request.session)
+    coach_store = sess.coach(request.session)
+    if coach_store.exists:
+        experiences = [WorkExperience(**e) for e in coach_store.experiences]
+        stale_resume = coach_store.is_stale(shared_store)
         experiences_with_history = _build_experiences_with_history(
-            experiences, coach.get("conversations", {})
+            experiences, coach_store.conversations
         )
         return render(request, "coach/index.html", {
-            **panel_context(request.session),
+            **shared_store.panel_context(),
             "active_tool": "coach",
             "restore": True,
             "experiences_with_history": experiences_with_history,
-            "cv_text": coach["cv_text"],
+            "cv_text": coach_store.cv_text,
             "stale_resume": stale_resume,
         })
     request.session.pop("coach", None)
     return render(request, "coach/index.html", {
-        **panel_context(request.session),
+        **shared_store.panel_context(),
         "active_tool": "coach",
     })
 
@@ -108,19 +90,20 @@ def reset(request):
 
 
 def workspace(request):
-    coach = request.session.get("coach")
-    if not coach:
+    coach_store = sess.coach(request.session)
+    if not coach_store.exists:
         return HttpResponseRedirect("/coach/")
-    experiences = [WorkExperience(**e) for e in coach["experiences"]]
-    stale_resume = _is_stale(request.session, coach)
+    shared_store = sess.shared(request.session)
+    experiences = [WorkExperience(**e) for e in coach_store.experiences]
+    stale_resume = coach_store.is_stale(shared_store)
     experiences_with_history = _build_experiences_with_history(
-        experiences, coach.get("conversations", {})
+        experiences, coach_store.conversations
     )
     return render(request, "coach/split_screen.html", {
-        **panel_context(request.session),
+        **shared_store.panel_context(),
         "active_tool": "coach",
         "experiences_with_history": experiences_with_history,
-        "cv_text": coach["cv_text"],
+        "cv_text": coach_store.cv_text,
         "stale_resume": stale_resume,
     })
 
@@ -142,18 +125,19 @@ def parse(request):
     except CoachParseError as e:
         return _error(str(e))
 
-    existing_conversations = (request.session.get("coach") or {}).get("conversations", {})
-    resume_version = get_resume_version(request.session)
-    request.session["coach"] = {
-        "cv_text": cv_text,
-        "experiences": [dataclasses.asdict(e) for e in experiences],
-        "conversations": existing_conversations,
-        "resume_version": resume_version,
-    }
+    shared_store = sess.shared(request.session)
+    coach_store = sess.coach(request.session)
+    coach_store.initialize(
+        cv_text=cv_text,
+        experiences=[dataclasses.asdict(e) for e in experiences],
+        resume_version=shared_store.resume_version,
+    )
 
-    experiences_with_history = _build_experiences_with_history(experiences, existing_conversations)
+    experiences_with_history = _build_experiences_with_history(
+        experiences, coach_store.conversations
+    )
     return render(request, "coach/split_screen.html", {
-        **panel_context(request.session),
+        **shared_store.panel_context(),
         "active_tool": "coach",
         "cv_text": cv_text,
         "experiences_with_history": experiences_with_history,
@@ -163,13 +147,13 @@ def parse(request):
 
 @require_POST
 def chat(request):
-    coach = request.session.get("coach")
-    if not coach:
+    coach_store = sess.coach(request.session)
+    if not coach_store.exists:
         return _error("Session expired. Please re-upload your CV.")
 
     try:
         exp_index = int(request.POST.get("exp_index", ""))
-        experience_data = coach["experiences"][exp_index]
+        experience_data = coach_store.experiences[exp_index]
     except (ValueError, IndexError):
         return _error("Invalid experience selected.")
 
@@ -184,24 +168,22 @@ def chat(request):
         # Hidden prefilled first message — not shown in the UI
         user_message = experience.original_description
 
-    nonce = str(uuid.uuid4())
-    request.session[nonce] = {
+    nonce_key = sess.nonce(request.session).put({
         "exp_index": exp_index,
         "user_message": user_message,
-    }
-    request.session.modified = True
+    })
 
     sse_container = (
-        f'<div id="sse-container-{nonce}"'
+        f'<div id="sse-container-{nonce_key}"'
         f'     hx-ext="sse"'
-        f'     sse-connect="/coach/stream/?key={nonce}"'
+        f'     sse-connect="/coach/stream/?key={nonce_key}"'
         f'     sse-close="done">'
         f'  <div class="stream-status">Thinking<span class="dots">...</span></div>'
-        f'  <div id="stream-output-{nonce}"'
+        f'  <div id="stream-output-{nonce_key}"'
         f'       sse-swap="chunk"'
         f'       hx-swap="beforeend"></div>'
         f'  <div sse-swap="wrap"'
-        f'       hx-target="#sse-container-{nonce}"'
+        f'       hx-target="#sse-container-{nonce_key}"'
         f'       hx-swap="outerHTML"></div>'
         f'</div>'
     )
@@ -216,21 +198,19 @@ def chat(request):
 
 def stream(request):
     key = request.GET.get("key", "")
-    nonce_data = request.session.pop(key, None)
+    nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
 
-    request.session.modified = True
-
-    coach = request.session.get("coach")
-    if not coach:
+    coach_store = sess.coach(request.session)
+    if not coach_store.exists:
         return HttpResponse("Coach session expired. Please re-upload your CV.", status=400)
 
     exp_index = nonce_data["exp_index"]
     user_message = nonce_data["user_message"]
-    experience = WorkExperience(**coach["experiences"][exp_index])
+    experience = WorkExperience(**coach_store.experiences[exp_index])
 
-    existing_history = coach["conversations"].get(str(exp_index), [])
+    existing_history = coach_store.get_conversation(exp_index)
     messages_to_send = existing_history + [{"role": "user", "content": user_message}]
 
     def event_stream():
@@ -248,25 +228,23 @@ def stream(request):
 
         if not errored and accumulated:
             assistant_reply = "".join(accumulated)
-            coach["conversations"][str(exp_index)] = messages_to_send + [
-                {"role": "assistant", "content": assistant_reply}
-            ]
-            request.session.modified = True
-            request.session.save()
+            final_messages = messages_to_send + [{"role": "assistant", "content": assistant_reply}]
+            coach_store.save_conversation(exp_index, final_messages)
 
             # Extract <rewrite> block; store as data attribute, strip from visible text
             rewrite_match = re.search(r'<rewrite>(.*?)</rewrite>', assistant_reply, re.DOTALL | re.IGNORECASE)
             if rewrite_match:
                 rewrite_text = rewrite_match.group(1).strip()
-                # Strip only the tags; keep the content visible in the chat bubble
-                clean_reply = re.sub(r'<rewrite>(.*?)</rewrite>', r'\1', assistant_reply, flags=re.DOTALL | re.IGNORECASE).strip()
+                clean_reply = re.sub(
+                    r'<rewrite>(.*?)</rewrite>', r'\1', assistant_reply,
+                    flags=re.DOTALL | re.IGNORECASE,
+                ).strip()
             else:
                 rewrite_text = None
                 clean_reply = assistant_reply
 
             safe_full = escape(clean_reply).replace("\n", "<br>")
             if rewrite_text:
-                # Encode newlines so they survive the HTML attribute
                 rewrite_attr_val = escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
                 rewrite_attr = f' data-rewrite="{rewrite_attr_val}"'
             else:
@@ -289,13 +267,13 @@ def stream(request):
 
 @require_POST
 def apply(request):
-    coach = request.session.get("coach")
-    if not coach:
+    coach_store = sess.coach(request.session)
+    if not coach_store.exists:
         return JsonResponse({"ok": False, "error": "Session expired. Please re-upload your CV."}, status=400)
 
     try:
         exp_index = int(request.POST.get("exp_index", ""))
-        experience_data = coach["experiences"][exp_index]
+        experience_data = coach_store.experiences[exp_index]
     except (ValueError, IndexError):
         return JsonResponse({"ok": False, "error": "Invalid experience selected."}, status=400)
 
@@ -303,7 +281,8 @@ def apply(request):
     if not rewrite_text:
         return JsonResponse({"ok": False, "error": "No rewrite text provided."}, status=400)
 
-    shared_yaml = request.session.get("shared_yaml")
+    shared_store = sess.shared(request.session)
+    shared_yaml = shared_store.yaml
     if not shared_yaml:
         return JsonResponse(
             {"ok": False, "error": "No resume YAML found. Generate your resume in the Writer tab first."},
@@ -328,25 +307,24 @@ def apply(request):
             status=404,
         )
 
-    request.session["shared_yaml"] = updated_yaml
-    request.session.pop("shared_html", None)
-    request.session.modified = True
+    shared_store.set_yaml(updated_yaml)
+    shared_store.invalidate_html()
     request.session.save()
 
     return JsonResponse({"ok": True})
 
 
 def conversation(request, exp_index: int):
-    coach = request.session.get("coach")
-    if not coach:
+    coach_store = sess.coach(request.session)
+    if not coach_store.exists:
         return _error("Session expired. Please re-upload your CV.")
 
     try:
-        experience = WorkExperience(**coach["experiences"][exp_index])
+        experience = WorkExperience(**coach_store.experiences[exp_index])
     except IndexError:
         return _error("Invalid experience.")
 
-    history = coach["conversations"].get(str(exp_index), [])
+    history = coach_store.get_conversation(exp_index)
     return render(request, "coach/conversation.html", {
         "experience": experience,
         "exp_index": exp_index,
