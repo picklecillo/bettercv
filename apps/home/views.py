@@ -75,10 +75,10 @@ def submit_resume(request):
             )
         except RenderCVBuildError as e:
             logger.warning("Panel render failed: %s", e)
-            return _panel_error(request, "Could not render resume preview. Please check the uploaded content.")
+            return _panel_error(request, str(e))
         except Exception as e:
             logger.error("Panel YAML/HTML generation failed: %s", e)
-            return _panel_error(request, "Something went wrong generating your resume preview.")
+            return _panel_error(request, str(e))
 
         shared_store.set_yaml(yaml_content)
         shared_store.set_html(html_content)
