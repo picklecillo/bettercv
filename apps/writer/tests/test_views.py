@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from apps.shared.test_utils import AuthenticatedMixin
+
 
 def _seed_shared_resume(client, resume_text="My resume.", filename=None, version=1):
     session = client.session
@@ -15,7 +17,7 @@ def _seed_shared_resume(client, resume_text="My resume.", filename=None, version
     session.save()
 
 
-class IndexViewTests(TestCase):
+class IndexViewTests(AuthenticatedMixin, TestCase):
 
     def test_get_returns_200(self):
         response = self.client.get("/writer/")
@@ -99,7 +101,7 @@ class ParseViewTests(TestCase):
         self.assertIn(b"result-error", response.content)
 
 
-class StreamViewTests(TestCase):
+class StreamViewTests(AuthenticatedMixin, TestCase):
 
     def _setup_session(self, resume_text="My resume"):
         key = str(uuid.uuid4())

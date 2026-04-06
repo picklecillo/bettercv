@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV — Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    :root {
+      --ink: #1a1a2e; --ink-mid: #3d3d5c; --cream: #f5f0e8;
+      --gold: #c9a84c; --gold-lt: #e8d9a8; --surface: #ffffff; --border: #e2ddd4;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink); display: flex; flex-direction: column; }
+    .site-header { flex-shrink: 0; background: var(--ink); padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 3px solid var(--gold); }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 1.75rem; color: var(--cream); text-decoration: none; margin-right: auto; }
+    .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-lt); text-decoration: none; padding: 0.45rem 1rem; border-radius: 2px; }
+    .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; }
+    .auth-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; margin: 0 0 0.25rem; }
+    .auth-subtitle { font-size: 0.825rem; color: var(--ink-mid); margin: 0 0 1.75rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.4rem; }
+    .form-input { width: 100%; background: var(--cream); border: 1px solid var(--border); border-radius: 3px; padding: 0.65rem 0.875rem; font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: var(--ink); outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+    .field-error { color: #c53030; font-size: 0.78rem; margin-top: 0.3rem; }
+    .submit-btn { width: 100%; background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.8rem; border: none; border-radius: 3px; cursor: pointer; margin-top: 0.5rem; transition: background 0.15s; }
+    .submit-btn:hover { background: var(--ink-mid); }
+    .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.825rem; color: var(--ink-mid); }
+    .auth-footer a { color: var(--gold); font-weight: 600; text-decoration: none; }
+    .free-badge { background: var(--gold-lt); color: var(--ink); border-radius: 2px; padding: 0.15rem 0.5rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 0.4rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">BetterCV</a>
+    <a href="/accounts/login/" class="nav-link">Login</a>
+  </header>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-subtitle">Get started with 10 free credits <span class="free-badge">Free</span></p>
+      <form method="POST" action="/accounts/register/">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="id_email">Email</label>
+          <input class="form-input" type="email" name="email" id="id_email"
+                 value="{{ form.email.value|default:'' }}"
+                 placeholder="you@example.com" autocomplete="email">
+          {% for e in form.email.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="id_password1">Password</label>
+          <input class="form-input" type="password" name="password1" id="id_password1"
+                 placeholder="Choose a password" autocomplete="new-password">
+          {% for e in form.password1.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="id_password2">Confirm password</label>
+          <input class="form-input" type="password" name="password2" id="id_password2"
+                 placeholder="Repeat password" autocomplete="new-password">
+          {% for e in form.password2.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <button type="submit" class="submit-btn">Create account</button>
+      </form>
+      <div class="auth-footer">
+        Already have an account? <a href="/accounts/login/">Sign in</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

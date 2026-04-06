@@ -5,6 +5,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
+from apps.shared.decorators import htmx_login_required
 
 from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
@@ -18,6 +19,7 @@ def _error(message: str, status: int = 400) -> HttpResponse:
     )
 
 
+@htmx_login_required
 def index(request):
     return render(request, "writer/index.html", {
         **sess.shared(request.session).panel_context(),
@@ -41,12 +43,22 @@ def parse(request):
     return render(request, "writer/_step2.html", {"nonce": nonce_key})
 
 
+@htmx_login_required
 @require_GET
 def stream(request):
     key = request.GET.get("key", "")
     nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
+
+    from apps.accounts.credits import deduct_credit
+    if not deduct_credit(request.user, 1, 'Resume Writer — YAML generation'):
+        def no_credits():
+            yield 'event: error\ndata: No credits remaining. Visit /accounts/buy/ to continue.\n\n'
+            yield "event: done\ndata: \n\n"
+        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
+        r["Cache-Control"] = "no-cache"
+        return r
 
     resume_text = nonce_data["resume_text"]
 

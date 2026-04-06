@@ -6,6 +6,7 @@ from django.test import Client, TestCase
 from apps.coach.coach_service import CoachParseError
 from apps.coach.tests.fakes import FAKE_EXPERIENCES, FakeCoachService
 from apps.shared import session as sess
+from apps.shared.test_utils import AuthenticatedMixin
 
 
 def _seed_coach_session(client):
@@ -70,7 +71,7 @@ class CoachChatTests(TestCase):
         self.assertIn("result-error", response.content.decode())
 
 
-class CoachStreamTests(TestCase):
+class CoachStreamTests(AuthenticatedMixin, TestCase):
 
     def _consume(self, response):
         return b"".join(response.streaming_content).decode()
@@ -211,7 +212,7 @@ class CoachConversationTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
 
-class ExperienceSwitchingTests(TestCase):
+class ExperienceSwitchingTests(AuthenticatedMixin, TestCase):
 
     def _consume(self, response):
         return b"".join(response.streaming_content).decode()
@@ -246,7 +247,7 @@ class ExperienceSwitchingTests(TestCase):
         self.assertIn("1", self.client.session["coach"]["conversations"])
 
 
-class CoachIndexTests(TestCase):
+class CoachIndexTests(AuthenticatedMixin, TestCase):
 
     def test_get_returns_200(self):
         response = self.client.get("/coach/")
@@ -334,7 +335,7 @@ class CoachIndexTests(TestCase):
         self.assertEqual(response["HX-Redirect"], "/coach/")
 
 
-class CoachParseTests(TestCase):
+class CoachParseTests(AuthenticatedMixin, TestCase):
 
     def _post_text(self, fake, cv_text="My CV text"):
         with patch("apps.coach.views.get_coach_service", return_value=fake):

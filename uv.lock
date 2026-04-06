@@ -86,6 +86,7 @@ dependencies = [
     { name = "anthropic" },
     { name = "django" },
     { name = "django-environ" },
+    { name = "django-sesame" },
     { name = "gunicorn" },
     { name = "markdown" },
     { name = "pdfplumber" },
@@ -110,6 +111,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=0.86.0" },
     { name = "django", specifier = ">=5.2.12" },
     { name = "django-environ" },
+    { name = "django-sesame", specifier = ">=3.2.3" },
     { name = "gunicorn", specifier = ">=25.3.0" },
     { name = "markdown", specifier = ">=3.10.2" },
     { name = "pdfplumber", specifier = ">=0.11.9" },
@@ -429,6 +431,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/18/3c/60983e6ec9b24a8d8588eecebfd21123cba980bce0a905807a27692f0860/django_environ-0.13.0.tar.gz", hash = "sha256:6c401e4c219442c2c4588c2116d5292b5484a6f69163ed09cd41f3943bfb645f", size = 63529 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/00/3767393ece946084e1c6830a33ffb8e39d68642e27ad5ac7d4c8bd5de866/django_environ-0.13.0-py3-none-any.whl", hash = "sha256:37799d14cd78222c6fd8298e48bfe17965ff8e586091ad66a463e52e0e7b799e", size = 20682 },
+]
+
+[[package]]
+name = "django-sesame"
+version = "3.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a7/97/5340660eff87af3e1eb318b483677eae9b30512eebede6fbe29b3b502713/django_sesame-3.2.3.tar.gz", hash = "sha256:09977a1c55bdbcce0a024c712c4d683e1a69543a217626ffa1d5f7ef7ebffc58", size = 17597 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/b8/61d44649c57efc58ad6851192db0c3afed2b161a474bb1d010446d6d8637/django_sesame-3.2.3-py3-none-any.whl", hash = "sha256:5da0210a57a8f48dd61a6c8125e61121403042ed000c96187e4188a8241496d6", size = 20285 },
 ]
 
 [[package]]

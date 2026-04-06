@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST, require_GET
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
+from apps.shared.decorators import htmx_login_required
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
@@ -57,6 +58,7 @@ def _build_experiences_with_history(experiences: list[WorkExperience], conversat
     return result
 
 
+@htmx_login_required
 def index(request):
     shared_store = sess.shared(request.session)
     coach_store = sess.coach(request.session)
@@ -108,6 +110,7 @@ def workspace(request):
     })
 
 
+@htmx_login_required
 @require_POST
 def parse(request):
     if request.FILES.get("resume_pdf"):
@@ -119,6 +122,15 @@ def parse(request):
         cv_text = request.POST.get("cv_text", "").strip()
         if not cv_text:
             return _error("Please provide your CV (text or PDF).")
+
+    from apps.accounts.credits import deduct_credit
+    if not deduct_credit(request.user, 1, 'Resume coaching — parse CV'):
+        return HttpResponse(
+            '<div class="result-error credits-error">No credits remaining. '
+            '<a href="/accounts/buy/">Buy credits</a> to continue.</div>',
+            status=402,
+            content_type='text/html',
+        )
 
     try:
         experiences = get_coach_service().parse_cv(cv_text)
@@ -196,11 +208,21 @@ def chat(request):
     return HttpResponse(sse_container, content_type="text/html")
 
 
+@htmx_login_required
 def stream(request):
     key = request.GET.get("key", "")
     nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
+
+    from apps.accounts.credits import deduct_credit
+    if not deduct_credit(request.user, 1, 'Resume coaching — chat turn'):
+        def no_credits():
+            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
+            yield "event: done\ndata: \n\n"
+        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
+        r["Cache-Control"] = "no-cache"
+        return r
 
     coach_store = sess.coach(request.session)
     if not coach_store.exists:

@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
+from apps.shared.decorators import htmx_login_required
 
 from .claude import ClaudeServiceError, get_service
 
@@ -18,6 +19,7 @@ def _error(message: str, status: int = 400) -> HttpResponse:
     )
 
 
+@htmx_login_required
 def index(request):
     return render(request, 'analyzer/index.html', {
         **sess.shared(request.session).panel_context(),
@@ -61,11 +63,21 @@ def analyze(request):
     )
 
 
+@htmx_login_required
 def stream(request):
     key = request.GET.get("key", "")
     data = sess.nonce(request.session).pop(key)
     if not data:
         return HttpResponse("Session expired. Please submit the form again.", status=400)
+
+    from apps.accounts.credits import deduct_credit
+    if not deduct_credit(request.user, 1, 'ATS analysis'):
+        def no_credits():
+            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
+            yield "event: done\ndata: \n\n"
+        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
+        r["Cache-Control"] = "no-cache"
+        return r
 
     def event_stream():
         accumulated = []

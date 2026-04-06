@@ -7,9 +7,10 @@ from django.test import TestCase
 from apps.analyzer.claude import ClaudeServiceError
 from apps.analyzer.tests.fakes import FakeClaudeService
 from apps.shared.pdf import PdfExtractionError
+from apps.shared.test_utils import AuthenticatedMixin
 
 
-class IndexViewTests(TestCase):
+class IndexViewTests(AuthenticatedMixin, TestCase):
 
     def test_get_returns_200(self):
         response = self.client.get("/analyzer/")
@@ -107,7 +108,7 @@ class AnalyzeViewTests(TestCase):
         self.assertEqual(session_values[0]["resume_text"], "PDF RESUME TEXT")
 
 
-class StreamViewTests(TestCase):
+class StreamViewTests(AuthenticatedMixin, TestCase):
 
     def _setup_session(self, resume_text="my resume", jd_text="some job"):
         key = str(uuid.uuid4())

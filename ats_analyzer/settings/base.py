@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.accounts',
     'apps.analyzer',
     'apps.coach',
     'apps.compare',
@@ -142,4 +143,47 @@ MEDIA_ROOT = env("MEDIA_ROOT", default=BASE_DIR / "media")
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Authentication ───────────────────────────────────────────────────────────
+
+AUTHENTICATION_BACKENDS = [
+    'apps.accounts.backends.EmailBackend',
+    'sesame.backends.ModelBackend',
+    'django.contrib.auth.backends.ModelBackend',  # keeps /admin/ login working
+]
+
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/home/'
+LOGOUT_REDIRECT_URL = '/'
+
+SESAME_MAX_AGE = 900  # 15-minute magic links
+SESAME_ONE_TIME = True  # Invalidate token after first use
+
+# ── Lemon Squeezy ────────────────────────────────────────────────────────────
+
+LEMON_SQUEEZY_WEBHOOK_SECRET = env('LEMON_SQUEEZY_WEBHOOK_SECRET', default='change-me')
+
+CREDIT_PACKAGES = [
+    {
+        'id': 'starter',
+        'label': 'Starter',
+        'credits': 20,
+        'price_usd': 5,
+        'variant_id': env('LS_VARIANT_STARTER', default=''),
+    },
+    {
+        'id': 'standard',
+        'label': 'Standard',
+        'credits': 50,
+        'price_usd': 10,
+        'variant_id': env('LS_VARIANT_STANDARD', default=''),
+    },
+    {
+        'id': 'pro',
+        'label': 'Pro',
+        'credits': 120,
+        'price_usd': 20,
+        'variant_id': env('LS_VARIANT_PRO', default=''),
+    },
+]
 

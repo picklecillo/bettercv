@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BetterCV — Payment Successful</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Outfit', sans-serif; background: #f5f0e8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { background: #fff; border: 1px solid #e2ddd4; border-radius: 4px; padding: 3rem 2.5rem; max-width: 420px; width: 100%; text-align: center; }
+    h1 { font-family: 'DM Serif Display', serif; font-size: 1.75rem; margin: 0 0 0.75rem; color: #1a1a2e; }
+    p { font-size: 0.875rem; color: #3d3d5c; margin: 0 0 1rem; }
+    .credits-badge { display: inline-block; background: #e8d9a8; color: #1a1a2e; padding: 0.25rem 0.75rem; border-radius: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem; }
+    a { display: inline-block; background: #1a1a2e; color: #f5f0e8; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem 1.5rem; border-radius: 3px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Payment successful</h1>
+    <p>Your credits have been added to your account.</p>
+    <div class="credits-badge">{{ current_credits }} credits available</div>
+    <br>
+    <a href="/home/">Start using tools</a>
+  </div>
+</body>
+</html>

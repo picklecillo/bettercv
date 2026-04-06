@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV — Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    :root { --ink: #1a1a2e; --ink-mid: #3d3d5c; --cream: #f5f0e8; --gold: #c9a84c; --gold-lt: #e8d9a8; --surface: #ffffff; --border: #e2ddd4; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink); }
+    .site-header { background: var(--ink); padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 3px solid var(--gold); }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 1.75rem; color: var(--cream); text-decoration: none; margin-right: auto; }
+    .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-lt); text-decoration: none; padding: 0.45rem 1rem; border-radius: 2px; }
+    .page-wrap { max-width: 640px; margin: 3rem auto; padding: 0 1.5rem; }
+    .page-title { font-family: 'DM Serif Display', serif; font-size: 2rem; margin: 0 0 0.25rem; }
+    .email-line { font-size: 0.875rem; color: var(--ink-mid); margin: 0 0 2.5rem; }
+    .credits-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+    .credits-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.4rem; }
+    .credits-value { font-family: 'DM Serif Display', serif; font-size: 2.5rem; line-height: 1; }
+    .buy-btn { background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.7rem 1.5rem; border: none; border-radius: 3px; cursor: pointer; text-decoration: none; }
+    .buy-btn:hover { background: var(--ink-mid); }
+    .section-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mid); margin: 0 0 0.75rem; }
+    .tx-table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+    .tx-table th { text-align: left; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mid); padding: 0 0 0.5rem; border-bottom: 1px solid var(--border); }
+    .tx-table td { padding: 0.6rem 0; border-bottom: 1px solid var(--border); color: var(--ink-mid); }
+    .tx-table td:first-child { color: var(--ink); }
+    .tx-amount.positive { color: #276749; font-weight: 600; }
+    .tx-amount.negative { color: #742a2a; }
+    .empty-state { text-align: center; color: var(--ink-mid); font-size: 0.825rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/home/" class="logo">BetterCV</a>
+    <a href="/home/" class="nav-link">Tools</a>
+    <form method="POST" action="/accounts/logout/" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;">Logout</button>
+    </form>
+  </header>
+  <div class="page-wrap">
+    <h1 class="page-title">Account</h1>
+    <p class="email-line">{{ request.user.email }}</p>
+
+    <div class="credits-card">
+      <div>
+        <div class="credits-label">Credits remaining</div>
+        <div class="credits-value">{{ profile.credits }}</div>
+      </div>
+      <a href="/accounts/buy/" class="buy-btn">Buy credits</a>
+    </div>
+
+    <div class="section-title">Recent transactions</div>
+    {% if transactions %}
+      <table class="tx-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+            <tr>
+              <td>{{ tx.description }}</td>
+              <td class="tx-amount {% if tx.amount > 0 %}positive{% else %}negative{% endif %}">
+                {{ tx.amount|stringformat:"+d" }}
+              </td>
+              <td>{{ tx.created_at|date:"M j, Y" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty-state">No transactions yet.</p>
+    {% endif %}
+  </div>
+</body>
+</html>

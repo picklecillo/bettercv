@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
+from apps.shared.decorators import htmx_login_required
 
 from .compare_service import CompareMetadataError, get_compare_service
 
@@ -36,6 +37,7 @@ def _build_jds_for_restore(compare_store) -> list[dict]:
     return result
 
 
+@htmx_login_required
 def index(request):
     shared_store = sess.shared(request.session)
     compare_store = sess.compare(request.session)
@@ -201,11 +203,21 @@ def remove_jd(request):
     return HttpResponse(card_oob, content_type="text/html")
 
 
+@htmx_login_required
 def stream(request):
     key = request.GET.get("key", "")
     nonce_data = sess.nonce(request.session).pop(key)
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
+
+    from apps.accounts.credits import deduct_credit
+    if not deduct_credit(request.user, 1, 'JD comparison'):
+        def no_credits():
+            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
+            yield "event: done\ndata: \n\n"
+        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
+        r["Cache-Control"] = "no-cache"
+        return r
 
     compare_store = sess.compare(request.session)
     if not compare_store.is_initialized:

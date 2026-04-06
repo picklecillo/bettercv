@@ -6,6 +6,7 @@ from django.test import TestCase
 from apps.compare.compare_service import CompareMetadataError
 from apps.compare.tests.fakes import FAKE_METADATA, FakeCompareService
 from apps.shared import session as sess
+from apps.shared.test_utils import AuthenticatedMixin
 
 
 def _seed_compare_session(client, resume_text="My full resume."):
@@ -154,7 +155,7 @@ class AddJdTests(TestCase):
         self.assertIn("result-error", response.content.decode())
 
 
-class CompareStreamTests(TestCase):
+class CompareStreamTests(AuthenticatedMixin, TestCase):
 
     def _consume(self, response):
         return b"".join(response.streaming_content).decode()
@@ -263,7 +264,7 @@ class RemoveJdTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
 
-class CompareIndexTests(TestCase):
+class CompareIndexTests(AuthenticatedMixin, TestCase):
 
     def test_get_returns_200(self):
         response = self.client.get("/compare/")

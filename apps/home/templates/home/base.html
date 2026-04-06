@@ -272,6 +272,31 @@
     }
     .change-link:hover { opacity: 1; }
 
+    /* ── Auth / credits header ── */
+    .user-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: 1rem;
+    }
+
+    .credit-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--gold);
+      color: var(--ink);
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    .credits-error a {
+      color: #c53030;
+      font-weight: 600;
+    }
+
     /* ── Spinner animation ── */
     .spinner {
       width: 1rem;
@@ -300,6 +325,19 @@
       <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
       <a href="/writer/" class="nav-link {% if active_tool == 'writer' %}active{% endif %}">Resume Writer</a>
     </nav>
+    <div class="user-section">
+      {% if user.is_authenticated %}
+        <span class="credit-badge">{{ user.profile.credits|default:0 }} cr</span>
+        <a href="/accounts/" class="nav-link">{{ user.email }}</a>
+        <form method="POST" action="/accounts/logout/" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;padding:0.45rem 0.75rem;">Logout</button>
+        </form>
+      {% else %}
+        <a href="/accounts/login/" class="nav-link">Login</a>
+        <a href="/accounts/register/" class="nav-link">Register</a>
+      {% endif %}
+    </div>
   </header>
 
   <div class="app-shell">
