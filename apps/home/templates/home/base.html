@@ -311,6 +311,21 @@
 
     .dots { display: inline-block; animation: blink 1.2s step-start infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── Footer ── */
+    .site-footer {
+      flex-shrink: 0;
+      background-color: var(--ink);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 0.6rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.3);
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -357,6 +372,11 @@
   </div>
 
   {% block extra_scripts %}{% endblock %}
+
+  <footer class="site-footer">
+    <span>&copy; 2026 BetterCV</span>
+    <span>Made with &#9829; in Chile</span>
+  </footer>
 
 </body>
 </html>
