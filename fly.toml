@@ -13,7 +13,7 @@ primary_region = 'iad'
   DEBUG = 'False'
   ENV = "production"
   PORT = '8000'
-  ALLOWED_HOSTS = ".fly.dev"
+  ALLOWED_HOSTS = ".fly.dev,bettercv.xyz,www.bettercv.xyz"
   DATABASE_PATH = "/data/db.sqlite3"
   DJANGO_SETTINGS_MODULE = "ats_analyzer.settings.production"
 
