@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetterCV{% block title_suffix %} — Your Career Toolkit{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%231a1a2e'/><text y='.9em' font-size='72' x='14' fill='%23c9a84c' font-family='Georgia,serif' font-weight='bold'>B</text></svg>">
+  {% block meta_extra %}{% endblock %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <style type="text/tailwindcss">
+    :root {
+      --ink:     #1a1a2e;
+      --ink-mid: #3d3d5c;
+      --cream:   #f5f0e8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8d9a8;
+      --surface: #ffffff;
+      --border:  #e2ddd4;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .site-header {
+      flex-shrink: 0;
+      background: var(--ink);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.75rem;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-decoration: none;
+      margin-right: auto;
+    }
+
+    .nav-link {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      text-decoration: none;
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .site-footer {
+      flex-shrink: 0;
+      background: var(--ink);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 0.6rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.3);
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  {% block header %}
+  <header class="site-header">
+    <a href="{% block logo_href %}/{% endblock %}" class="logo">BetterCV</a>
+    {% block header_nav %}{% endblock %}
+  </header>
+  {% endblock %}
+
+  {% block page %}{% endblock %}
+
+  <footer class="site-footer">
+    <span>&copy; 2026 BetterCV</span>
+    <span>Made with &#9829; in Chile</span>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

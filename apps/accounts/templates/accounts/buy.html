@@ -1,47 +1,36 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BetterCV — Buy Credits</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style type="text/tailwindcss">
-    :root { --ink: #1a1a2e; --ink-mid: #3d3d5c; --cream: #f5f0e8; --gold: #c9a84c; --gold-lt: #e8d9a8; --surface: #ffffff; --border: #e2ddd4; }
-    *, *::before, *::after { box-sizing: border-box; }
-    html { height: 100%; }
-    body { min-height: 100%; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink); display: flex; flex-direction: column; }
-    .site-header { background: var(--ink); padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 3px solid var(--gold); }
-    .logo { font-family: 'DM Serif Display', serif; font-size: 1.75rem; color: var(--cream); text-decoration: none; margin-right: auto; }
-    .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-lt); text-decoration: none; padding: 0.45rem 1rem; border-radius: 2px; }
-    .page-wrap { flex: 1; max-width: 740px; width: 100%; margin: 3rem auto; padding: 0 1.5rem; }
-    .page-title { font-family: 'DM Serif Display', serif; font-size: 2rem; margin: 0 0 0.5rem; }
-    .page-sub { font-size: 0.875rem; color: var(--ink-mid); margin: 0 0 2.5rem; }
-    .current-credits { display: inline-block; background: var(--gold-lt); color: var(--ink); padding: 0.2rem 0.6rem; border-radius: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 0.4rem; }
-    .packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; }
-    .pkg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.75rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-    .pkg-card.featured { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
-    .pkg-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mid); }
-    .pkg-credits { font-family: 'DM Serif Display', serif; font-size: 2.25rem; line-height: 1; }
-    .pkg-credits small { font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: var(--ink-mid); font-weight: 400; }
-    .pkg-price { font-size: 1.1rem; font-weight: 600; color: var(--ink-mid); }
-    .pkg-cta { display: block; background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem; border-radius: 3px; text-decoration: none; text-align: center; margin-top: auto; }
-    .pkg-cta:hover { background: var(--ink-mid); }
-    .pkg-card.featured .pkg-cta { background: var(--gold); color: var(--ink); }
-    .pkg-card.featured .pkg-cta:hover { background: #b8952e; }
-    .note { font-size: 0.75rem; color: var(--ink-mid); margin-top: 2rem; opacity: 0.7; }
-    .site-footer { background: var(--ink); border-top: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <a href="/home/" class="logo">BetterCV</a>
-    <a href="/accounts/" class="nav-link">Account</a>
-    <a href="/home/" class="nav-link">Tools</a>
-  </header>
+{% extends "accounts/base.html" %}
+
+{% block title_suffix %} — Buy Credits{% endblock %}
+
+{% block logo_href %}/home/{% endblock %}
+
+{% block header_nav %}
+  <a href="/accounts/" class="nav-link">Account</a>
+  <a href="/home/" class="nav-link">Tools</a>
+{% endblock %}
+
+{% block extra_head %}
+<style type="text/tailwindcss">
+  .page-wrap { flex: 1; max-width: 740px; width: 100%; margin: 3rem auto; padding: 0 1.5rem; }
+  .page-title { font-family: 'DM Serif Display', serif; font-size: 2rem; margin: 0 0 0.5rem; }
+  .page-sub { font-size: 0.875rem; color: var(--ink-mid); margin: 0 0 2.5rem; }
+  .current-credits { display: inline-block; background: var(--gold-lt); color: var(--ink); padding: 0.2rem 0.6rem; border-radius: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 0.4rem; }
+  .packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; }
+  .pkg-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1.75rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .pkg-card.featured { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+  .pkg-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mid); }
+  .pkg-credits { font-family: 'DM Serif Display', serif; font-size: 2.25rem; line-height: 1; }
+  .pkg-credits small { font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: var(--ink-mid); font-weight: 400; }
+  .pkg-price { font-size: 1.1rem; font-weight: 600; color: var(--ink-mid); }
+  .pkg-cta { display: block; background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem; border-radius: 3px; text-decoration: none; text-align: center; margin-top: auto; }
+  .pkg-cta:hover { background: var(--ink-mid); }
+  .pkg-card.featured .pkg-cta { background: var(--gold); color: var(--ink); }
+  .pkg-card.featured .pkg-cta:hover { background: #b8952e; }
+  .note { font-size: 0.75rem; color: var(--ink-mid); margin-top: 2rem; opacity: 0.7; }
+</style>
+{% endblock %}
+
+{% block content %}
   <div class="page-wrap">
     <h1 class="page-title">Buy credits</h1>
     <p class="page-sub">
@@ -60,9 +49,4 @@
     </div>
     <p class="note">Payments processed securely by Lemon Squeezy. Credits are added to your account immediately after payment.</p>
   </div>
-  <footer class="site-footer">
-    <span>&copy; 2026 BetterCV</span>
-    <span>Made with &#9829; in Chile</span>
-  </footer>
-</body>
-</html>
+{% endblock %}

@@ -1,54 +1,38 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BetterCV — Sign In</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-  <style type="text/tailwindcss">
-    :root {
-      --ink: #1a1a2e; --ink-mid: #3d3d5c; --cream: #f5f0e8;
-      --gold: #c9a84c; --gold-lt: #e8d9a8; --surface: #ffffff; --border: #e2ddd4;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; padding: 0; }
-    body { font-family: 'Outfit', sans-serif; background: var(--cream); color: var(--ink); display: flex; flex-direction: column; }
-    .site-header { flex-shrink: 0; background: var(--ink); padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 3px solid var(--gold); }
-    .logo { font-family: 'DM Serif Display', serif; font-size: 1.75rem; color: var(--cream); text-decoration: none; margin-right: auto; }
-    .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-lt); text-decoration: none; padding: 0.45rem 1rem; border-radius: 2px; }
-    .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; }
-    .auth-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; margin: 0 0 0.25rem; }
-    .auth-subtitle { font-size: 0.825rem; color: var(--ink-mid); margin: 0 0 1.75rem; }
-    .form-group { margin-bottom: 1rem; }
-    .form-label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.4rem; }
-    .form-input { width: 100%; background: var(--cream); border: 1px solid var(--border); border-radius: 3px; padding: 0.65rem 0.875rem; font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: var(--ink); outline: none; transition: border-color 0.15s; }
-    .form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
-    .auth-error { border-left: 3px solid #e53e3e; background: #fff5f5; color: #742a2a; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 2px; font-size: 0.825rem; }
-    .submit-btn { width: 100%; background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.8rem; border: none; border-radius: 3px; cursor: pointer; transition: background 0.15s; }
-    .submit-btn:hover { background: var(--ink-mid); }
-    .divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); opacity: 0.5; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .ghost-btn { width: 100%; background: transparent; color: var(--ink-mid); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
-    .ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
-    .magic-sent { text-align: center; color: var(--ink-mid); font-size: 0.825rem; padding: 0.75rem 0; }
-    .magic-error { color: #c53030; font-size: 0.825rem; margin-top: 0.5rem; }
-    .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.825rem; color: var(--ink-mid); }
-    .auth-footer a { color: var(--gold); font-weight: 600; text-decoration: none; }
-    .site-footer { flex-shrink: 0; background: var(--ink); border-top: 1px solid rgba(255,255,255,0.08); padding: 0.6rem 2rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
-  </style>
-</head>
-<body>
-  <header class="site-header">
-    <a href="/" class="logo">BetterCV</a>
-    <a href="/accounts/register/" class="nav-link">Register</a>
-  </header>
+{% extends "accounts/base.html" %}
+
+{% block title_suffix %} — Sign In{% endblock %}
+
+{% block header_nav %}
+  <a href="/accounts/register/" class="nav-link">Register</a>
+{% endblock %}
+
+{% block extra_head %}
+<meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
+<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+<style type="text/tailwindcss">
+  .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; }
+  .auth-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; margin: 0 0 0.25rem; }
+  .auth-subtitle { font-size: 0.825rem; color: var(--ink-mid); margin: 0 0 1.75rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.4rem; }
+  .form-input { width: 100%; background: var(--cream); border: 1px solid var(--border); border-radius: 3px; padding: 0.65rem 0.875rem; font-family: 'Outfit', sans-serif; font-size: 0.875rem; color: var(--ink); outline: none; transition: border-color 0.15s; }
+  .form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+  .auth-error { border-left: 3px solid #e53e3e; background: #fff5f5; color: #742a2a; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 2px; font-size: 0.825rem; }
+  .submit-btn { width: 100%; background: var(--ink); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.8rem; border: none; border-radius: 3px; cursor: pointer; transition: background 0.15s; }
+  .submit-btn:hover { background: var(--ink-mid); }
+  .divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); opacity: 0.5; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .ghost-btn { width: 100%; background: transparent; color: var(--ink-mid); font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
+  .magic-sent { text-align: center; color: var(--ink-mid); font-size: 0.825rem; padding: 0.75rem 0; }
+  .magic-error { color: #c53030; font-size: 0.825rem; margin-top: 0.5rem; }
+  .auth-footer { text-align: center; margin-top: 1.5rem; font-size: 0.825rem; color: var(--ink-mid); }
+  .auth-footer a { color: var(--gold); font-weight: 600; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
   <div class="auth-wrap">
     <div class="auth-card">
       <h1 class="auth-title">Sign in</h1>
@@ -96,9 +80,4 @@
       </div>
     </div>
   </div>
-  <footer class="site-footer">
-    <span>&copy; 2026 BetterCV</span>
-    <span>Made with &#9829; in Chile</span>
-  </footer>
-</body>
-</html>
+{% endblock %}

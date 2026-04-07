@@ -1,384 +1,297 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BetterCV{% block title_suffix %} — Your Career Toolkit{% endblock %}</title>
-  <meta name="robots" content="noindex">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%231a1a2e'/><text y='.9em' font-size='72' x='14' fill='%23c9a84c' font-family='Georgia,serif' font-weight='bold'>B</text></svg>">
+{% extends "base.html" %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+{% block title_suffix %} — Your Career Toolkit{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+{% block meta_extra %}
+<meta name="robots" content="noindex">
+{% endblock %}
 
-  <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
-  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+{% block extra_head %}
+<meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}'>
+<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
 
-  <style type="text/tailwindcss">
-    :root {
-      --ink:     #1a1a2e;
-      --ink-mid: #3d3d5c;
-      --cream:   #f5f0e8;
-      --gold:    #c9a84c;
-      --gold-lt: #e8d9a8;
-      --surface: #ffffff;
-      --border:  #e2ddd4;
-    }
+<style type="text/tailwindcss">
+  /* ── Full-height app shell layout ── */
+  html, body { height: 100%; min-height: 0; }
+  body { display: flex; flex-direction: column; }
 
-    /* ── Reset / base ── */
-    *, *::before, *::after { box-sizing: border-box; }
+  /* ── Nav / user section ── */
+  .site-nav { display: flex; gap: 0.25rem; }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
+  .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
+  .nav-link.active { background: var(--gold); color: var(--ink); }
 
-    body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--cream);
-      color: var(--ink);
-      display: flex;
-      flex-direction: column;
-    }
+  .user-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+  }
 
-    /* ── Header ── */
-    .site-header {
-      flex-shrink: 0;
-      background-color: var(--ink);
-      padding: 1rem 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      border-bottom: 3px solid var(--gold);
-    }
+  .credit-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--gold);
+    color: var(--ink);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
 
-    .site-header .logo {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.75rem;
-      color: var(--cream);
-      letter-spacing: -0.02em;
-      line-height: 1;
-      text-decoration: none;
-      margin-right: auto;
-    }
+  .credits-error a { color: #c53030; font-weight: 600; }
 
-    .site-nav { display: flex; gap: 0.25rem; }
+  /* ── App shell ── */
+  .app-shell {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+  }
 
-    .nav-link {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold-lt);
-      text-decoration: none;
-      padding: 0.45rem 1rem;
-      border-radius: 2px;
-      transition: background 0.15s, color 0.15s;
-    }
-    .nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
-    .nav-link.active { background: var(--gold); color: var(--ink); }
+  /* ── Panel column ── */
+  .panel-col {
+    width: 33.333%;
+    min-width: 300px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-    /* ── App shell ── */
-    .app-shell {
-      flex: 1;
-      overflow: hidden;
-      display: flex;
-    }
+  .panel-header {
+    flex-shrink: 0;
+    padding: 1.25rem 1.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
 
-    /* ── Panel column ── */
-    .panel-col {
-      width: 33.333%;
-      min-width: 300px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+  .panel-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    opacity: 0.6;
+  }
 
-    .panel-header {
-      flex-shrink: 0;
-      padding: 1.25rem 1.75rem 1rem;
-      border-bottom: 1px solid var(--border);
-    }
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1.75rem;
+  }
 
-    .panel-label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      opacity: 0.6;
-    }
+  /* ── Content column ── */
+  .content-col {
+    flex: 1;
+    overflow: hidden;
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+  }
 
-    .panel-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.5rem 1.75rem;
-    }
+  /* ── Panel upload form ── */
+  .card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
 
-    /* ── Content column ── */
-    .content-col {
-      flex: 1;
-      overflow: hidden;
-      background: var(--cream);
-      display: flex;
-      flex-direction: column;
-    }
+  .divider-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.875rem 0;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .divider-label::before, .divider-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gold-lt);
+  }
 
-    /* ── Panel upload form ── */
-    .card-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      margin-bottom: 0.5rem;
-      display: block;
-    }
+  .styled-textarea {
+    width: 100%;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.75rem 0.875rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.825rem;
+    color: var(--ink);
+    resize: vertical;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .styled-textarea::placeholder { color: #b0a99a; }
+  .styled-textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+  }
 
-    .divider-label {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin: 0.875rem 0;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-    .divider-label::before, .divider-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--gold-lt);
-    }
+  .styled-file {
+    width: 100%;
+    background: var(--cream);
+    border: 1px dashed var(--gold-lt);
+    border-radius: 3px;
+    padding: 0.625rem 0.875rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .styled-file:hover { border-color: var(--gold); }
 
-    .styled-textarea {
-      width: 100%;
-      background: var(--cream);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.75rem 0.875rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.825rem;
-      color: var(--ink);
-      resize: vertical;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      outline: none;
-    }
-    .styled-textarea::placeholder { color: #b0a99a; }
-    .styled-textarea:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
-    }
+  .action-btn {
+    background-color: var(--ink);
+    color: var(--cream);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.75rem 1.75rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { background-color: var(--ink-mid); }
+  .action-btn:active { transform: translateY(1px); }
+  .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
 
-    .styled-file {
-      width: 100%;
-      background: var(--cream);
-      border: 1px dashed var(--gold-lt);
-      border-radius: 3px;
-      padding: 0.625rem 0.875rem;
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.78rem;
-      color: var(--ink-mid);
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .styled-file:hover { border-color: var(--gold); }
+  .ghost-btn {
+    background: transparent;
+    color: var(--ink-mid);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
+  .ghost-btn:active { transform: translateY(1px); }
+  .ghost-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
 
-    .action-btn {
-      background-color: var(--ink);
-      color: var(--cream);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      padding: 0.75rem 1.75rem;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background-color 0.15s, transform 0.1s;
-      white-space: nowrap;
-    }
-    .action-btn:hover { background-color: var(--ink-mid); }
-    .action-btn:active { transform: translateY(1px); }
-    .action-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  /* ── Shared result / error ── */
+  .result-error {
+    border-left: 3px solid #e53e3e;
+    background: #fff5f5;
+    color: #742a2a;
+    padding: 0.875rem 1rem;
+    margin-top: 1rem;
+    border-radius: 2px;
+    font-size: 0.825rem;
+  }
 
-    .ghost-btn {
-      background: transparent;
-      color: var(--ink-mid);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      padding: 0.75rem 1.25rem;
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s, transform 0.1s;
-      white-space: nowrap;
-    }
-    .ghost-btn:hover { border-color: var(--gold); color: var(--ink); }
-    .ghost-btn:active { transform: translateY(1px); }
-    .ghost-btn.htmx-request { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  .loaded-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--ink-mid);
+    margin-bottom: 1rem;
+  }
 
-    /* ── Shared result / error ── */
-    .result-error {
-      border-left: 3px solid #e53e3e;
-      background: #fff5f5;
-      color: #742a2a;
-      padding: 0.875rem 1rem;
-      margin-top: 1rem;
-      border-radius: 2px;
-      font-size: 0.825rem;
-    }
+  .loaded-badge-label {
+    background: var(--gold-lt);
+    color: var(--ink);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
 
-    .loaded-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--ink-mid);
-      margin-bottom: 1rem;
-    }
+  .change-link {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-decoration: none;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+  .change-link:hover { opacity: 1; }
 
-    .loaded-badge-label {
-      background: var(--gold-lt);
-      color: var(--ink);
-      padding: 0.2rem 0.6rem;
-      border-radius: 2px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
+  /* ── Spinner / dots animation ── */
+  .spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: var(--cream);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-    .change-link {
-      font-size: 0.68rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-mid);
-      text-decoration: none;
-      opacity: 0.55;
-      transition: opacity 0.15s;
-    }
-    .change-link:hover { opacity: 1; }
+  .dots { display: inline-block; animation: blink 1.2s step-start infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
 
-    /* ── Auth / credits header ── */
-    .user-section {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-left: 1rem;
-    }
+{% block tool_head %}{% endblock %}
+{% endblock %}
 
-    .credit-badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      background: var(--gold);
-      color: var(--ink);
-      padding: 0.2rem 0.6rem;
-      border-radius: 2px;
-      white-space: nowrap;
-    }
-
-    .credits-error a {
-      color: #c53030;
-      font-weight: 600;
-    }
-
-    /* ── Spinner animation ── */
-    .spinner {
-      width: 1rem;
-      height: 1rem;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: var(--cream);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .dots { display: inline-block; animation: blink 1.2s step-start infinite; }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-    /* ── Footer ── */
-    .site-footer {
-      flex-shrink: 0;
-      background-color: var(--ink);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      padding: 0.6rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.3);
-    }
-  </style>
-
-  {% block extra_head %}{% endblock %}
-</head>
-<body>
-
-  <header class="site-header">
-    <a href="/" class="logo">BetterCV</a>
-    <nav class="site-nav">
-      <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
-      <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
-      <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
-    </nav>
-    <div class="user-section">
-      {% if user.is_authenticated %}
-        <span class="credit-badge">{{ user.profile.credits|default:0 }} cr</span>
-        <a href="/accounts/" class="nav-link">{{ user.email }}</a>
-        <form method="POST" action="/accounts/logout/" style="display:inline">
-          {% csrf_token %}
-          <button type="submit" class="nav-link" style="background:none;border:none;cursor:pointer;padding:0.45rem 0.75rem;">Logout</button>
-        </form>
-      {% else %}
-        <a href="/accounts/login/" class="nav-link">Login</a>
-        <a href="/accounts/register/" class="nav-link">Register</a>
-      {% endif %}
-    </div>
-  </header>
-
-  <div class="app-shell">
-
-    <aside class="panel-col">
-      <div class="panel-header">
-        <span class="panel-label">Your Resume</span>
-      </div>
-      <div class="panel-body" id="resume-panel">
-        {% include "home/_panel.html" %}
-      </div>
-    </aside>
-
-    <main class="content-col">
-      {% block content %}{% endblock %}
-    </main>
-
+{% block header %}
+<header class="site-header">
+  <a href="/" class="logo">BetterCV</a>
+  <nav class="site-nav">
+    <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
+    <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
+    <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
+  </nav>
+  <div class="user-section">
+    {% if user.is_authenticated %}
+      <span class="credit-badge">{{ user.profile.credits|default:0 }} cr</span>
+      <a href="/accounts/" class="nav-link">{{ user.email }}</a>
+      <form method="POST" action="/accounts/logout/" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="nav-link" style="padding:0.45rem 0.75rem;">Logout</button>
+      </form>
+    {% else %}
+      <a href="/accounts/login/" class="nav-link">Login</a>
+      <a href="/accounts/register/" class="nav-link">Register</a>
+    {% endif %}
   </div>
+</header>
+{% endblock %}
 
-  {% block extra_scripts %}{% endblock %}
+{% block page %}
+<div class="app-shell">
 
-  <footer class="site-footer">
-    <span>&copy; 2026 BetterCV</span>
-    <span>Made with &#9829; in Chile</span>
-  </footer>
+  <aside class="panel-col">
+    <div class="panel-header">
+      <span class="panel-label">Your Resume</span>
+    </div>
+    <div class="panel-body" id="resume-panel">
+      {% include "home/_panel.html" %}
+    </div>
+  </aside>
 
-</body>
-</html>
+  <main class="content-col">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+{% endblock %}

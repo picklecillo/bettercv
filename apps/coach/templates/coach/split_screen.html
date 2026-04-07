@@ -16,16 +16,6 @@
   {% endif %}
 
   <style type="text/tailwindcss">
-    :root {
-      --ink:     #1a1a2e;
-      --ink-mid: #3d3d5c;
-      --cream:   #f5f0e8;
-      --gold:    #c9a84c;
-      --gold-lt: #e8d9a8;
-      --surface: #ffffff;
-      --border:  #e2ddd4;
-    }
-
     /* ── Split layout ── */
     .coach-grid {
       display: grid;
@@ -232,16 +222,6 @@
       text-transform: uppercase;
       color: var(--gold);
       padding: 0.5rem 0;
-    }
-
-    .dots {
-      display: inline-block;
-      animation: blink 1.2s step-start infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0; }
     }
 
     /* ── Chat input ── */
