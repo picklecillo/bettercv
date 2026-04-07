@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -11,7 +12,9 @@
   <meta property="og:title" content="BetterCV — Your Career Toolkit">
   <meta property="og:description" content="Upload your resume once and access four AI-powered tools: ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer.">
   <meta property="og:site_name" content="BetterCV">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image.png' %}">
+  <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image.png' %}">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="BetterCV — Your Career Toolkit">
   <meta name="twitter:description" content="Upload your resume once and access four AI-powered tools: ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='8' fill='%231a1a2e'/><text y='.9em' font-size='72' x='14' fill='%23c9a84c' font-family='Georgia,serif' font-weight='bold'>B</text></svg>">
