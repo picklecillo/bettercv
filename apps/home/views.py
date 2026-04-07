@@ -17,6 +17,14 @@ def landing(request):
     return render(request, "home/landing.html")
 
 
+def robots_txt(request):
+    return render(request, "home/robots.txt", content_type="text/plain")
+
+
+def sitemap_xml(request):
+    return render(request, "home/sitemap.xml", content_type="application/xml")
+
+
 def _panel_context(request) -> dict:
     return sess.shared(request.session).panel_context()
 

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /home/
+Disallow: /analyzer/
+Disallow: /coach/
+Disallow: /compare/
+Disallow: /writer/
+Disallow: /accounts/
+Disallow: /admin/
+Disallow: /resume/
+
+Sitemap: https://bettercv.xyz/sitemap.xml
