@@ -167,7 +167,10 @@ class StreamViewTests(AuthenticatedMixin, TestCase):
     def test_no_render_event_on_error(self):
         key = self._setup_session()
         fake = FakeClaudeService()
-        fake.stream = MagicMock(side_effect=ClaudeServiceError("Rate limit hit.", 502))
+        def _error_stream(*args, **kwargs):
+            raise ClaudeServiceError("Rate limit hit.", 502)
+            yield  # noqa: unreachable — makes this a generator matching production shape
+        fake.stream = _error_stream
         with patch("apps.analyzer.views.get_service", return_value=fake):
             response = self.client.get(f"/analyzer/analyze/stream/?key={key}")
             content = self._consume(response)
@@ -177,7 +180,10 @@ class StreamViewTests(AuthenticatedMixin, TestCase):
     def test_service_error_streamed_as_error_chunk(self):
         key = self._setup_session()
         fake = FakeClaudeService()
-        fake.stream = MagicMock(side_effect=ClaudeServiceError("Rate limit hit.", 502))
+        def _error_stream(*args, **kwargs):
+            raise ClaudeServiceError("Rate limit hit.", 502)
+            yield  # noqa: unreachable — makes this a generator matching production shape
+        fake.stream = _error_stream
         with patch("apps.analyzer.views.get_service", return_value=fake):
             response = self.client.get(f"/analyzer/analyze/stream/?key={key}")
             content = self._consume(response)

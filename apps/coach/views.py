@@ -1,5 +1,6 @@
 import dataclasses
 import re
+from collections.abc import Generator
 
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
@@ -9,6 +10,7 @@ from django.views.decorators.http import require_POST, require_GET
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
+from apps.shared.sse import SSEEvent, SseStream, no_credits_response
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
@@ -217,12 +219,7 @@ def stream(request):
 
     from apps.accounts.credits import deduct_credit
     if not deduct_credit(request.user, 1, 'Resume coaching — chat turn'):
-        def no_credits():
-            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
-            yield "event: done\ndata: \n\n"
-        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
-        r["Cache-Control"] = "no-cache"
-        return r
+        return no_credits_response()
 
     coach_store = sess.coach(request.session)
     if not coach_store.exists:
@@ -235,56 +232,42 @@ def stream(request):
     existing_history = coach_store.get_conversation(exp_index)
     messages_to_send = existing_history + [{"role": "user", "content": user_message}]
 
-    def event_stream():
-        accumulated = []
-        errored = False
-        try:
-            for chunk in get_coach_service().stream_reply(experience, messages_to_send):
-                accumulated.append(chunk)
-                safe = escape(chunk).replace("\n", "<br>")
-                yield f"event: chunk\ndata: <span>{safe}</span>\n\n"
-        except Exception as e:
-            errored = True
-            safe_msg = escape(str(e))
-            yield f"event: chunk\ndata: <div class='result-error'>Error: {safe_msg}</div>\n\n"
+    def finalizer(accumulated: str | None) -> Generator[SSEEvent, None, None]:
+        if accumulated is None:
+            return
 
-        if not errored and accumulated:
-            assistant_reply = "".join(accumulated)
-            final_messages = messages_to_send + [{"role": "assistant", "content": assistant_reply}]
-            coach_store.save_conversation(exp_index, final_messages)
+        final_messages = messages_to_send + [{"role": "assistant", "content": accumulated}]
+        coach_store.save_conversation(exp_index, final_messages)
 
-            # Extract <rewrite> block; store as data attribute, strip from visible text
-            rewrite_match = re.search(r'<rewrite>(.*?)</rewrite>', assistant_reply, re.DOTALL | re.IGNORECASE)
-            if rewrite_match:
-                rewrite_text = rewrite_match.group(1).strip()
-                clean_reply = re.sub(
-                    r'<rewrite>(.*?)</rewrite>', r'\1', assistant_reply,
-                    flags=re.DOTALL | re.IGNORECASE,
-                ).strip()
-            else:
-                rewrite_text = None
-                clean_reply = assistant_reply
+        rewrite_match = re.search(r'<rewrite>(.*?)</rewrite>', accumulated, re.DOTALL | re.IGNORECASE)
+        if rewrite_match:
+            rewrite_text = rewrite_match.group(1).strip()
+            clean_reply = re.sub(
+                r'<rewrite>(.*?)</rewrite>', r'\1', accumulated,
+                flags=re.DOTALL | re.IGNORECASE,
+            ).strip()
+        else:
+            rewrite_text = None
+            clean_reply = accumulated
 
-            safe_full = escape(clean_reply).replace("\n", "<br>")
-            if rewrite_text:
-                rewrite_attr_val = escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
-                rewrite_attr = f' data-rewrite="{rewrite_attr_val}"'
-            else:
-                rewrite_attr = ''
-            wrapped = (
-                f'<div class="chat-msg assistant-msg"{rewrite_attr} id="msg-{key}">'
-                f'<div class="msg-body">{safe_full}</div>'
-                f'</div>'
-            )
-            wrapped_lines = "\n".join(f"data: {line}" for line in wrapped.splitlines())
-            yield f"event: wrap\n{wrapped_lines}\n\n"
+        safe_full = escape(clean_reply).replace("\n", "<br>")
+        if rewrite_text:
+            rewrite_attr_val = escape(rewrite_text).replace('\n', '&#10;').replace('\r', '&#13;')
+            rewrite_attr = f' data-rewrite="{rewrite_attr_val}"'
+        else:
+            rewrite_attr = ''
 
-        yield "event: done\ndata: \n\n"
+        wrapped = (
+            f'<div class="chat-msg assistant-msg"{rewrite_attr} id="msg-{key}">'
+            f'<div class="msg-body">{safe_full}</div>'
+            f'</div>'
+        )
+        yield SSEEvent("wrap", wrapped)
 
-    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response
+    return SseStream(
+        source=get_coach_service().stream_reply(experience, messages_to_send),
+        finalizer=finalizer,
+    ).response()
 
 
 @require_POST

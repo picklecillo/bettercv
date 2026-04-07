@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Generator
 
 import markdown as md
 from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
@@ -9,6 +10,7 @@ from django.views.decorators.http import require_POST
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
+from apps.shared.sse import SSEEvent, SseStream, no_credits_response
 
 from .compare_service import CompareMetadataError, get_compare_service
 
@@ -212,12 +214,7 @@ def stream(request):
 
     from apps.accounts.credits import deduct_credit
     if not deduct_credit(request.user, 1, 'JD comparison'):
-        def no_credits():
-            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
-            yield "event: done\ndata: \n\n"
-        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
-        r["Cache-Control"] = "no-cache"
-        return r
+        return no_credits_response()
 
     compare_store = sess.compare(request.session)
     if not compare_store.is_initialized:
@@ -228,82 +225,62 @@ def stream(request):
     resume_text = nonce_data["resume_text"]
     jd_text = nonce_data["jd_text"]
 
-    def event_stream():
-        accumulated = []
-        errored = False
+    def finalizer(accumulated: str | None) -> Generator[SSEEvent, None, None]:
+        if accumulated is None:
+            return
 
+        metadata_dict = None
+        score_high_val = -1
         try:
-            for chunk in get_compare_service().stream_analysis(resume_text, jd_text):
-                accumulated.append(chunk)
-                safe = escape(chunk).replace("\n", "<br>")
-                yield f"event: chunk\ndata: <span>{safe}</span>\n\n"
-        except Exception as e:
-            errored = True
-            safe_msg = escape(str(e))
-            yield f"event: chunk\ndata: <div class='result-error'>Error: {safe_msg}</div>\n\n"
+            meta = get_compare_service().extract_metadata(accumulated, jd_text)
+            metadata_dict = {
+                "company": meta.company,
+                "title": meta.title,
+                "score_low": meta.score_low,
+                "score_high": meta.score_high,
+            }
+            score_high_val = meta.score_high
+            label = f"{escape(meta.company)} · {escape(meta.title)}"
+            score = f"{meta.score_low}–{meta.score_high} / 100"
+        except CompareMetadataError:
+            label = "—"
+            score = "—"
 
-        if not errored and accumulated:
-            analysis_text = "".join(accumulated)
+        compare_store.set_jd_result(jd_id, accumulated, metadata_dict)
 
-            # Extract metadata before committing — set_jd_result commits both at once
-            metadata_dict = None
-            score_high_val = -1
-            try:
-                meta = get_compare_service().extract_metadata(analysis_text, jd_text)
-                metadata_dict = {
-                    "company": meta.company,
-                    "title": meta.title,
-                    "score_low": meta.score_low,
-                    "score_high": meta.score_high,
-                }
-                score_high_val = meta.score_high
-                label = f"{escape(meta.company)} · {escape(meta.title)}"
-                score = f"{meta.score_low}–{meta.score_high} / 100"
-            except CompareMetadataError:
-                label = "—"
-                score = "—"
+        # metadata MUST be yielded before wrap — wrap removes the sse-swap listeners
+        # that receive metadata. Ordering is structurally enforced by yield order.
+        remove_btn = (
+            f'<button class="remove-btn" '
+            f'hx-post="/compare/remove-jd/" '
+            f'hx-vals=\'{{"jd_id": "{jd_id}"}}\' '
+            f'hx-include="[name=csrfmiddlewaretoken]" '
+            f'hx-target="#summary-row-{jd_id}" '
+            f'hx-swap="delete" '
+            f'hx-confirm="Remove this analysis?">'
+            f'Remove</button>'
+        )
+        row_html = (
+            f'<tr id="summary-row-{jd_id}" data-score-high="{score_high_val}">'
+            f'<td>{jd_num}</td>'
+            f'<td>{escape(label)}</td>'
+            f'<td>'
+            f'<span class="score-badge">{escape(score)}</span>'
+            f'<span class="best-star" aria-label="Best score">★</span>'
+            f'</td>'
+            f'<td>Done</td>'
+            f'<td>{remove_btn}</td>'
+            f'</tr>'
+        )
+        yield SSEEvent("metadata", row_html)
 
-            compare_store.set_jd_result(jd_id, analysis_text, metadata_dict)
+        rendered = md.markdown(accumulated, extensions=["tables"])
+        yield SSEEvent("wrap", f'<div class="analysis-result">{rendered}</div>')
 
-            # metadata event: update summary row BEFORE wrap removes the listener
-            remove_btn = (
-                f'<button class="remove-btn" '
-                f'hx-post="/compare/remove-jd/" '
-                f'hx-vals=\'{{"jd_id": "{jd_id}"}}\' '
-                f'hx-include="[name=csrfmiddlewaretoken]" '
-                f'hx-target="#summary-row-{jd_id}" '
-                f'hx-swap="delete" '
-                f'hx-confirm="Remove this analysis?">'
-                f'Remove</button>'
-            )
-            row_html = (
-                f'<tr id="summary-row-{jd_id}" data-score-high="{score_high_val}">'
-                f'<td>{jd_num}</td>'
-                f'<td>{escape(label)}</td>'
-                f'<td>'
-                f'<span class="score-badge">{escape(score)}</span>'
-                f'<span class="best-star" aria-label="Best score">★</span>'
-                f'</td>'
-                f'<td>Done</td>'
-                f'<td>{remove_btn}</td>'
-                f'</tr>'
-            )
-            row_lines = "\n".join(f"data: {line}" for line in row_html.splitlines())
-            yield f"event: metadata\n{row_lines}\n\n"
-
-            # wrap event: replace streaming container with rendered markdown
-            # (this removes the sse-swap listeners, so metadata must come first)
-            rendered = md.markdown(analysis_text, extensions=["tables"])
-            wrap_html = f'<div class="analysis-result">{rendered}</div>'
-            wrap_lines = "\n".join(f"data: {line}" for line in wrap_html.splitlines())
-            yield f"event: wrap\n{wrap_lines}\n\n"
-
-        yield "event: done\ndata: \n\n"
-
-    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response
+    return SseStream(
+        source=get_compare_service().stream_analysis(resume_text, jd_text),
+        finalizer=finalizer,
+    ).response()
 
 
 @require_POST

@@ -175,7 +175,10 @@ class CoachStreamTests(AuthenticatedMixin, TestCase):
     def test_error_not_committed_to_history(self):
         from unittest.mock import MagicMock
         fake = _fake()
-        fake.stream_reply = MagicMock(side_effect=Exception("API down"))
+        def _error_stream_reply(*args, **kwargs):
+            raise Exception("API down")
+            yield  # noqa: unreachable — makes this a generator matching production shape
+        fake.stream_reply = _error_stream_reply
         nonce = self._setup_stream(_fake())  # use plain fake to get nonce
         # Now replace with error fake for the stream call
         with patch("apps.coach.views.get_coach_service", return_value=fake):

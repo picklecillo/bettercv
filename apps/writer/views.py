@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
+from apps.shared.sse import make_sse_response, no_credits_response
 
 from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
@@ -53,12 +54,7 @@ def stream(request):
 
     from apps.accounts.credits import deduct_credit
     if not deduct_credit(request.user, 1, 'Resume Writer — YAML generation'):
-        def no_credits():
-            yield 'event: error\ndata: No credits remaining. Visit /accounts/buy/ to continue.\n\n'
-            yield "event: done\ndata: \n\n"
-        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
-        r["Cache-Control"] = "no-cache"
-        return r
+        return no_credits_response()
 
     resume_text = nonce_data["resume_text"]
 
@@ -73,10 +69,7 @@ def stream(request):
 
         yield "event: done\ndata: \n\n"
 
-    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response
+    return make_sse_response(event_stream())
 
 
 @require_POST

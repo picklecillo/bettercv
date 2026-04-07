@@ -1,4 +1,3 @@
-import markdown as md
 from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
@@ -7,6 +6,7 @@ from django.views.decorators.http import require_POST
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
+from apps.shared.sse import SseStream, no_credits_response
 
 from .claude import ClaudeServiceError, get_service
 
@@ -72,38 +72,9 @@ def stream(request):
 
     from apps.accounts.credits import deduct_credit
     if not deduct_credit(request.user, 1, 'ATS analysis'):
-        def no_credits():
-            yield 'event: chunk\ndata: <div class="result-error credits-error">No credits remaining. <a href="/accounts/buy/">Buy credits</a> to continue.</div>\n\n'
-            yield "event: done\ndata: \n\n"
-        r = StreamingHttpResponse(no_credits(), content_type="text/event-stream")
-        r["Cache-Control"] = "no-cache"
-        return r
+        return no_credits_response()
 
-    def event_stream():
-        accumulated = []
-        errored = False
-        try:
-            for chunk in get_service().stream(data["resume_text"], data["jd_text"]):
-                accumulated.append(chunk)
-                safe = escape(chunk).replace("\n", "<br>")
-                yield f"event: chunk\ndata: <span>{safe}</span>\n\n"
-        except ClaudeServiceError as e:
-            errored = True
-            safe_msg = escape(e.message)
-            yield f"event: chunk\ndata: <div class='result-error'>{safe_msg}</div>\n\n"
-        except Exception as e:
-            errored = True
-            safe_msg = escape(str(e))
-            yield f"event: chunk\ndata: <div class='result-error'>Unexpected error: {safe_msg}</div>\n\n"
-
-        if not errored and accumulated:
-            rendered = md.markdown("".join(accumulated), extensions=["tables"])
-            data_lines = "\n".join(f"data: {line}" for line in rendered.splitlines())
-            yield f"event: render\n{data_lines}\n\n"
-
-        yield "event: done\ndata: \n\n"
-
-    response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
-    response["Cache-Control"] = "no-cache"
-    response["X-Accel-Buffering"] = "no"
-    return response
+    return SseStream(
+        source=get_service().stream(data["resume_text"], data["jd_text"]),
+        known_errors=(ClaudeServiceError,),
+    ).response()

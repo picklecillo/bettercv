@@ -223,7 +223,10 @@ class CompareStreamTests(AuthenticatedMixin, TestCase):
     def test_errored_stream_not_committed(self):
         from unittest.mock import MagicMock
         fake = FakeCompareService()
-        fake.stream_analysis = MagicMock(side_effect=Exception("API down"))
+        def _error_stream_analysis(*args, **kwargs):
+            raise Exception("API down")
+            yield  # noqa: unreachable — makes this a generator matching production shape
+        fake.stream_analysis = _error_stream_analysis
         nonce, jd_id = self._setup_stream(FakeCompareService())
         with patch("apps.compare.views.get_compare_service", return_value=fake):
             self._consume(self.client.get(f"/compare/stream/?key={nonce}"))
