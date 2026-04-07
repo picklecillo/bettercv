@@ -3,12 +3,15 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
+from apps.accounts.credits import CreditCost
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
 from apps.shared.sse import SseStream, no_credits_response
 
 from .claude import ClaudeServiceError, get_service
+
+STREAM_COST = CreditCost(amount=1, description='ATS analysis')
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -70,9 +73,8 @@ def stream(request):
     if not data:
         return HttpResponse("Session expired. Please submit the form again.", status=400)
 
-    from apps.accounts.credits import deduct_credit
-    if not deduct_credit(request.user, 1, 'ATS analysis'):
-        return no_credits_response()
+    if resp := STREAM_COST.guard(request.user, no_credits_response):
+        return resp
 
     return SseStream(
         source=get_service().stream(data["resume_text"], data["jd_text"]),

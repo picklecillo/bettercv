@@ -4,10 +4,12 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
+import apps.analyzer.views as analyzer_views
+from apps.accounts.credits import credit_balance, grant_credits
 from apps.analyzer.claude import ClaudeServiceError
 from apps.analyzer.tests.fakes import FakeClaudeService
 from apps.shared.pdf import PdfExtractionError
-from apps.shared.test_utils import AuthenticatedMixin
+from apps.shared.test_utils import AuthenticatedMixin, ZeroCreditsMixin
 
 
 class IndexViewTests(AuthenticatedMixin, TestCase):
@@ -190,3 +192,58 @@ class StreamViewTests(AuthenticatedMixin, TestCase):
         self.assertIn("result-error", content)
         self.assertIn("Rate limit hit.", content)
         self.assertIn("event: done", content)
+
+
+class StreamCreditDeclarationTests(TestCase):
+
+    def test_declared_stream_cost_is_one_credit(self):
+        self.assertEqual(analyzer_views.STREAM_COST.amount, 1)
+
+    def test_declared_description(self):
+        self.assertEqual(analyzer_views.STREAM_COST.description, 'ATS analysis')
+
+
+class StreamCreditSuccessTests(AuthenticatedMixin, TestCase):
+
+    def _setup_session(self):
+        key = str(uuid.uuid4())
+        session = self.client.session
+        session[key] = {"resume_text": "my resume", "jd_text": "some job"}
+        session.save()
+        return key
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_successful_stream_deducts_one_credit(self):
+        grant_credits(self.user, 5, 'test')
+        before = credit_balance(self.user)
+        key = self._setup_session()
+        with patch("apps.analyzer.views.get_service", return_value=FakeClaudeService("ok")):
+            self._consume(self.client.get(f"/analyzer/analyze/stream/?key={key}"))
+        self.assertEqual(before - credit_balance(self.user), analyzer_views.STREAM_COST.amount)
+
+
+class StreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def _setup_session(self):
+        key = str(uuid.uuid4())
+        session = self.client.session
+        session[key] = {"resume_text": "r", "jd_text": "j"}
+        session.save()
+        return key
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_zero_credits_returns_sse_error(self):
+        key = self._setup_session()
+        content = self._consume(self.client.get(f"/analyzer/analyze/stream/?key={key}"))
+        self.assertIn("credits-error", content)
+        self.assertIn("event: done", content)
+
+    def test_zero_credits_does_not_call_claude(self):
+        key = self._setup_session()
+        with patch("apps.analyzer.views.get_service") as mock_svc:
+            self._consume(self.client.get(f"/analyzer/analyze/stream/?key={key}"))
+        mock_svc.assert_not_called()

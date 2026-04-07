@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.accounts.credits import CreditCost
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
@@ -10,6 +11,8 @@ from apps.shared.sse import make_sse_response, no_credits_response
 
 from .rendercv_builder import RenderCVBuildError, get_builder
 from .writer_service import get_writer_service
+
+STREAM_COST = CreditCost(amount=1, description='Resume Writer — YAML generation')
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -52,9 +55,8 @@ def stream(request):
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
 
-    from apps.accounts.credits import deduct_credit
-    if not deduct_credit(request.user, 1, 'Resume Writer — YAML generation'):
-        return no_credits_response()
+    if resp := STREAM_COST.guard(request.user, no_credits_response):
+        return resp
 
     resume_text = nonce_data["resume_text"]
 

@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
 
+from apps.accounts.credits import CreditCost
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
@@ -14,6 +15,18 @@ from apps.shared.sse import SSEEvent, SseStream, no_credits_response
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
 from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
+
+PARSE_COST  = CreditCost(amount=1, description='Resume coaching — parse CV')
+STREAM_COST = CreditCost(amount=1, description='Resume coaching — chat turn')
+
+
+def _no_credits_html():
+    return HttpResponse(
+        '<div class="result-error credits-error">No credits remaining. '
+        '<a href="/accounts/buy/">Buy credits</a> to continue.</div>',
+        status=402,
+        content_type='text/html',
+    )
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -125,14 +138,8 @@ def parse(request):
         if not cv_text:
             return _error("Please provide your CV (text or PDF).")
 
-    from apps.accounts.credits import deduct_credit
-    if not deduct_credit(request.user, 1, 'Resume coaching — parse CV'):
-        return HttpResponse(
-            '<div class="result-error credits-error">No credits remaining. '
-            '<a href="/accounts/buy/">Buy credits</a> to continue.</div>',
-            status=402,
-            content_type='text/html',
-        )
+    if resp := PARSE_COST.guard(request.user, _no_credits_html):
+        return resp
 
     try:
         experiences = get_coach_service().parse_cv(cv_text)
@@ -217,9 +224,8 @@ def stream(request):
     if not nonce_data:
         return HttpResponse("Session expired. Please try again.", status=400)
 
-    from apps.accounts.credits import deduct_credit
-    if not deduct_credit(request.user, 1, 'Resume coaching — chat turn'):
-        return no_credits_response()
+    if resp := STREAM_COST.guard(request.user, no_credits_response):
+        return resp
 
     coach_store = sess.coach(request.session)
     if not coach_store.exists:

@@ -1,12 +1,16 @@
 import dataclasses
+import re
 from unittest.mock import patch
 
 from django.test import Client, TestCase
 
+import apps.coach.views as coach_views
+from apps.accounts.credits import credit_balance, grant_credits
+from apps.accounts.models import UserProfile
 from apps.coach.coach_service import CoachParseError
 from apps.coach.tests.fakes import FAKE_EXPERIENCES, FakeCoachService
 from apps.shared import session as sess
-from apps.shared.test_utils import AuthenticatedMixin
+from apps.shared.test_utils import AuthenticatedMixin, ZeroCreditsMixin
 
 
 def _seed_coach_session(client):
@@ -553,3 +557,108 @@ class CoachWorkspaceTests(TestCase):
         session.save()
         response = self.client.get("/coach/workspace/")
         self.assertNotContains(response, "resume has changed")
+
+
+class CoachCreditDeclarationTests(TestCase):
+
+    def test_declared_parse_cost_is_one_credit(self):
+        self.assertEqual(coach_views.PARSE_COST.amount, 1)
+
+    def test_declared_stream_cost_is_one_credit(self):
+        self.assertEqual(coach_views.STREAM_COST.amount, 1)
+
+    def test_declared_total_session_cost_is_two_credits(self):
+        self.assertEqual(coach_views.PARSE_COST.amount + coach_views.STREAM_COST.amount, 2)
+
+
+class CoachCreditSuccessTests(AuthenticatedMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def _setup_stream_nonce(self):
+        _seed_coach_session(self.client)
+        fake = FakeCoachService()
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            r = self.client.post("/coach/chat/", {"exp_index": "0"})
+        return re.search(r'/coach/stream/\?key=([\w-]+)', r.content.decode()).group(1)
+
+    def test_parse_deducts_one_credit(self):
+        grant_credits(self.user, 5, 'test')
+        before = credit_balance(self.user)
+        with patch("apps.coach.views.get_coach_service", return_value=FakeCoachService()):
+            self.client.post("/coach/parse/", {"cv_text": "My CV"})
+        self.assertEqual(before - credit_balance(self.user), coach_views.PARSE_COST.amount)
+
+    def test_stream_deducts_one_credit(self):
+        grant_credits(self.user, 5, 'test')
+        nonce = self._setup_stream_nonce()
+        before = credit_balance(self.user)
+        with patch("apps.coach.views.get_coach_service", return_value=FakeCoachService()):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce}"))
+        self.assertEqual(before - credit_balance(self.user), coach_views.STREAM_COST.amount)
+
+    def test_full_session_costs_two_credits(self):
+        grant_credits(self.user, 5, 'test')
+        before = credit_balance(self.user)
+        with patch("apps.coach.views.get_coach_service", return_value=FakeCoachService()):
+            self.client.post("/coach/parse/", {"cv_text": "My CV"})
+        after_parse = credit_balance(self.user)
+        nonce = self._setup_stream_nonce()
+        with patch("apps.coach.views.get_coach_service", return_value=FakeCoachService()):
+            self._consume(self.client.get(f"/coach/stream/?key={nonce}"))
+        after_stream = credit_balance(self.user)
+        total = before - after_stream
+        self.assertEqual(total, coach_views.PARSE_COST.amount + coach_views.STREAM_COST.amount)
+
+
+class CoachParsZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def test_zero_credits_parse_returns_402(self):
+        with patch("apps.coach.views.get_coach_service", return_value=FakeCoachService()):
+            response = self.client.post("/coach/parse/", {"cv_text": "My CV"})
+        self.assertEqual(response.status_code, 402)
+        self.assertIn(b"credits-error", response.content)
+
+    def test_zero_credits_parse_does_not_call_service(self):
+        with patch("apps.coach.views.get_coach_service") as mock_svc:
+            self.client.post("/coach/parse/", {"cv_text": "My CV"})
+        mock_svc.return_value.parse_cv.assert_not_called()
+
+    def test_one_credit_insufficient_after_parse(self):
+        """User with exactly 1 credit can parse but not stream the first turn."""
+        profile = UserProfile.objects.get(user=self.user)
+        profile.credits = 1
+        profile.save(update_fields=['credits'])
+
+        fake = FakeCoachService()
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            parse_resp = self.client.post("/coach/parse/", {"cv_text": "My CV"})
+        self.assertEqual(parse_resp.status_code, 200)
+        self.assertEqual(credit_balance(self.user), 0)
+
+        _seed_coach_session(self.client)
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            r = self.client.post("/coach/chat/", {"exp_index": "0"})
+        nonce = re.search(r'/coach/stream/\?key=([\w-]+)', r.content.decode()).group(1)
+
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            content = b"".join(self.client.get(f"/coach/stream/?key={nonce}").streaming_content).decode()
+        self.assertIn("credits-error", content)
+
+
+class CoachStreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_zero_credits_stream_returns_sse_error(self):
+        _seed_coach_session(self.client)
+        fake = FakeCoachService()
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            r = self.client.post("/coach/chat/", {"exp_index": "0"})
+        nonce = re.search(r'/coach/stream/\?key=([\w-]+)', r.content.decode()).group(1)
+        with patch("apps.coach.views.get_coach_service", return_value=fake):
+            content = self._consume(self.client.get(f"/coach/stream/?key={nonce}"))
+        self.assertIn("credits-error", content)
+        self.assertIn("event: done", content)

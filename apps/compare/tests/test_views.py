@@ -1,12 +1,15 @@
+import re
 from io import BytesIO
 from unittest.mock import patch
 
 from django.test import TestCase
 
+import apps.compare.views as compare_views
+from apps.accounts.credits import credit_balance, grant_credits
 from apps.compare.compare_service import CompareMetadataError
 from apps.compare.tests.fakes import FAKE_METADATA, FakeCompareService
 from apps.shared import session as sess
-from apps.shared.test_utils import AuthenticatedMixin
+from apps.shared.test_utils import AuthenticatedMixin, ZeroCreditsMixin
 
 
 def _seed_compare_session(client, resume_text="My full resume."):
@@ -369,3 +372,62 @@ class ReanalyzeTests(TestCase):
         self._seed_with_incomplete_jd("real-id")
         response = self.client.post("/compare/reanalyze/nonexistent/")
         self.assertEqual(response.status_code, 400)
+
+
+class StreamCreditDeclarationTests(TestCase):
+
+    def test_declared_stream_cost_is_one_credit(self):
+        self.assertEqual(compare_views.STREAM_COST.amount, 1)
+
+    def test_declared_description(self):
+        self.assertEqual(compare_views.STREAM_COST.description, 'JD comparison')
+
+
+class StreamCreditSuccessTests(AuthenticatedMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def _setup_stream(self, fake):
+        _seed_compare_session(self.client)
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            r = self.client.post("/compare/add-jd/", {"jd_text": "We need an engineer."})
+        nonce = re.search(r'/compare/stream/\?key=([\w-]+)', r.content.decode()).group(1)
+        return nonce
+
+    def test_successful_stream_deducts_one_credit(self):
+        fake = FakeCompareService()
+        grant_credits(self.user, 5, 'test')
+        before = credit_balance(self.user)
+        nonce = self._setup_stream(fake)
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            self._consume(self.client.get(f"/compare/stream/?key={nonce}"))
+        self.assertEqual(before - credit_balance(self.user), compare_views.STREAM_COST.amount)
+
+
+class StreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def _setup_stream(self, fake):
+        _seed_compare_session(self.client)
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            r = self.client.post("/compare/add-jd/", {"jd_text": "We need an engineer."})
+        nonce = re.search(r'/compare/stream/\?key=([\w-]+)', r.content.decode()).group(1)
+        return nonce
+
+    def test_zero_credits_returns_sse_error(self):
+        fake = FakeCompareService()
+        nonce = self._setup_stream(fake)
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            content = self._consume(self.client.get(f"/compare/stream/?key={nonce}"))
+        self.assertIn("credits-error", content)
+        self.assertIn("event: done", content)
+
+    def test_zero_credits_does_not_call_compare_service_stream(self):
+        fake = FakeCompareService()
+        nonce = self._setup_stream(fake)
+        with patch("apps.compare.views.get_compare_service") as mock_svc:
+            self._consume(self.client.get(f"/compare/stream/?key={nonce}"))
+        mock_svc.return_value.stream_analysis.assert_not_called()

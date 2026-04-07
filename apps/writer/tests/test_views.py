@@ -4,7 +4,9 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from apps.shared.test_utils import AuthenticatedMixin
+import apps.writer.views as writer_views
+from apps.accounts.credits import credit_balance, grant_credits
+from apps.shared.test_utils import AuthenticatedMixin, ZeroCreditsMixin
 
 
 def _seed_shared_resume(client, resume_text="My resume.", filename=None, version=1):
@@ -234,3 +236,59 @@ class RenderPreviewViewTests(TestCase):
         data = response.json()
         self.assertIn("error", data)
         self.assertIn("Bad YAML", data["error"])
+
+
+class StreamCreditDeclarationTests(TestCase):
+
+    def test_declared_stream_cost_is_one_credit(self):
+        self.assertEqual(writer_views.STREAM_COST.amount, 1)
+
+    def test_declared_description(self):
+        self.assertEqual(writer_views.STREAM_COST.description, 'Resume Writer — YAML generation')
+
+
+class StreamCreditSuccessTests(AuthenticatedMixin, TestCase):
+
+    def _setup_session(self):
+        key = str(uuid.uuid4())
+        session = self.client.session
+        session[key] = {"resume_text": "My resume"}
+        session.save()
+        return key
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_successful_stream_deducts_one_credit(self):
+        grant_credits(self.user, 5, 'test')
+        before = credit_balance(self.user)
+        key = self._setup_session()
+        with patch("apps.writer.views.get_writer_service") as mock:
+            mock.return_value.stream_yaml.return_value = iter(["cv: {}\n"])
+            self._consume(self.client.get(f"/writer/stream/?key={key}"))
+        self.assertEqual(before - credit_balance(self.user), writer_views.STREAM_COST.amount)
+
+
+class StreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def _setup_session(self):
+        key = str(uuid.uuid4())
+        session = self.client.session
+        session[key] = {"resume_text": "r"}
+        session.save()
+        return key
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_zero_credits_returns_sse_error(self):
+        key = self._setup_session()
+        content = self._consume(self.client.get(f"/writer/stream/?key={key}"))
+        self.assertIn("credits-error", content)
+        self.assertIn("event: done", content)
+
+    def test_zero_credits_does_not_call_writer_service(self):
+        key = self._setup_session()
+        with patch("apps.writer.views.get_writer_service") as mock_svc:
+            self._consume(self.client.get(f"/writer/stream/?key={key}"))
+        mock_svc.assert_not_called()
