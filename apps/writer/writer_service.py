@@ -23,7 +23,6 @@ Follow this structure precisely. Omit any section that has no data in the source
   headline: Senior Software Engineer
   location: San Francisco, CA
   email: jane@example.com
-  phone: "+1 415 000 0000"
   website: https://janesmith.dev
   social_networks:
     - network: LinkedIn
@@ -39,6 +38,7 @@ Follow this structure precisely. Omit any section that has no data in the source
         start_date: "2021-03"
         end_date: present
         location: San Francisco, CA
+        summary: Led a team through a high impact backend migration
         highlights:
           - Led migration of monolith to microservices, reducing deploy time by 60%
           - Mentored 4 junior engineers; 3 promoted within 18 months
@@ -47,6 +47,7 @@ Follow this structure precisely. Omit any section that has no data in the source
         start_date: "2018-06"
         end_date: "2021-02"
         location: New York, NY
+        summary: Delivered on time at a fast paced startup
         highlights:
           - Built real-time analytics pipeline processing 50k events/sec
     education:
