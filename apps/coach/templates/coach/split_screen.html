@@ -412,7 +412,6 @@
       </div>
 
       <div class="start-over">
-        {% if shared_resume %}<a href="/?change=1" style="margin-right:1rem">Change resume</a>{% endif %}
         <form hx-post="/coach/reset/" hx-encoding="multipart/form-data" style="display:inline;margin:0">
           {% csrf_token %}
           <button type="submit" class="start-over-btn">↩ Start over</button>

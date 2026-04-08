@@ -37,7 +37,7 @@ class IndexViewTests(AuthenticatedMixin, TestCase):
 
     def test_get_no_prefill_when_no_shared_session(self):
         response = self.client.get("/analyzer/")
-        self.assertNotContains(response, "Change resume")
+        self.assertNotContains(response, "My shared resume")
 
 
 class AnalyzeViewTests(TestCase):
