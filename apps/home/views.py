@@ -38,8 +38,7 @@ def _panel_error(request, message):
     return render(
         request,
         "home/_panel_upload.html",
-        {"shared_resume": shared, "error_message": message},
-        status=400,
+        {"shared_resume": shared, "error_message": message, "show_replace_form": True},
     )
 
 

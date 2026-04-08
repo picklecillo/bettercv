@@ -39,7 +39,8 @@
 
   <div class="divider-label">or upload PDF</div>
 
-  <input type="file" name="resume_pdf" accept=".pdf" class="styled-file">
+  <input type="file" name="resume_pdf" accept=".pdf" class="styled-file"
+         onchange="document.getElementById('panel-upload-error').style.display='none';">
 
   <div id="panel-upload-error" class="result-error" style="display:{% if error_message %}block{% else %}none{% endif %}">
     {{ error_message|default:"Please paste your resume or upload a PDF." }}
