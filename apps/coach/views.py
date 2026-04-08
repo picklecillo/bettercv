@@ -319,6 +319,7 @@ def apply(request):
         )
 
     shared_store.set_yaml(updated_yaml)
+    shared_store.bump_resume_version()
     shared_store.invalidate_html()
     request.session.save()
 

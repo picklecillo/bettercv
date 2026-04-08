@@ -39,6 +39,13 @@ class SharedStore:
     def yaml(self) -> str | None:
         return self._s.get("shared_yaml")
 
+    def bump_resume_version(self) -> None:
+        """Increment resume version without changing text — signals resume content has changed."""
+        current = self._s.get("shared_resume")
+        if current:
+            current["version"] = current.get("version", 0) + 1
+            _mark_modified(self._s)
+
     def set_yaml(self, yaml_str: str) -> None:
         self._s["shared_yaml"] = yaml_str
 
@@ -187,6 +194,12 @@ class CompareStore:
         _mark_modified(self._s)
         if hasattr(self._s, "save"):
             self._s.save()
+
+    def update_resume(self, resume_text: str, resume_version: int | None) -> None:
+        compare = self._s.get("compare") or {}
+        compare["resume_text"] = resume_text
+        compare["resume_version"] = resume_version
+        _mark_modified(self._s)
 
     def all_jds(self) -> list[tuple[str, dict]]:
         compare = self._s.get("compare") or {}

@@ -167,6 +167,7 @@ def render_resume_html(request):
 
     shared_store = sess.shared(request.session)
     shared_store.set_yaml(yaml_content)
+    shared_store.bump_resume_version()
     shared_store.set_html(html_content)
     request.session.save()
 

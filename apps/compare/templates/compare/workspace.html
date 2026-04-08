@@ -294,6 +294,26 @@
       text-align: right;
       padding-top: 1rem;
     }
+    .reprocess-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: none;
+      color: var(--gold, #c9a84c);
+      border: 1px solid var(--gold, #c9a84c);
+      border-radius: 2px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .reprocess-btn:hover {
+      background: var(--gold, #c9a84c);
+      color: var(--ink);
+    }
+    .reprocess-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
+
     .start-over a, .start-over-btn {
       font-size: 0.72rem;
       font-weight: 500;
@@ -366,6 +386,15 @@
                   hx-target="#summary-row-{{ jd.jd_id }}"
                   hx-swap="delete"
                   hx-confirm="Remove this analysis?">Remove</button>
+                {% if stale_resume %}
+                <form hx-post="/compare/reanalyze/{{ jd.jd_id }}/"
+                      hx-target="#card-{{ jd.jd_id }}"
+                      hx-swap="outerHTML"
+                      hx-include="[name=csrfmiddlewaretoken]"
+                      style="display:inline;margin:0">
+                  <button type="submit" class="reprocess-btn">Reprocess</button>
+                </form>
+                {% endif %}
               </td>
             </tr>
             {% elif jd.analysis_html %}
@@ -382,6 +411,15 @@
                   hx-target="#summary-row-{{ jd.jd_id }}"
                   hx-swap="delete"
                   hx-confirm="Remove this analysis?">Remove</button>
+                {% if stale_resume %}
+                <form hx-post="/compare/reanalyze/{{ jd.jd_id }}/"
+                      hx-target="#card-{{ jd.jd_id }}"
+                      hx-swap="outerHTML"
+                      hx-include="[name=csrfmiddlewaretoken]"
+                      style="display:inline;margin:0">
+                  <button type="submit" class="reprocess-btn">Reprocess</button>
+                </form>
+                {% endif %}
               </td>
             </tr>
             {% else %}

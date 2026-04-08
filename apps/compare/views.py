@@ -288,12 +288,16 @@ def stream(request):
 @require_POST
 def reanalyze(request, jd_id: str):
     compare_store = sess.compare(request.session)
+    shared_store = sess.shared(request.session)
     if not compare_store.is_initialized:
         return _error("Session expired. Please re-upload your resume.")
 
     jd = compare_store.get_jd(jd_id)
     if not jd:
         return _error("Unknown job description.", status=400)
+
+    if shared_store.resume_text:
+        compare_store.update_resume(shared_store.resume_text, shared_store.resume_version)
 
     jd_text = jd["jd_text"]
     jd_num = list(compare_store.all_jds()).index((jd_id, jd)) + 1
