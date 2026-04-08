@@ -130,8 +130,8 @@ class SubmitResumeTests(TestCase):
 
     def test_panel_empty_submission_returns_error(self):
         response = self.client.post("/resume/", {"source": "panel"})
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "result-error", status_code=400)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "result-error")
 
     def test_panel_unreadable_pdf_returns_error(self):
         pdf_file = io.BytesIO(b"bad pdf")
@@ -139,8 +139,8 @@ class SubmitResumeTests(TestCase):
         with patch("apps.home.views.extract_text_from_pdf",
                    side_effect=PdfExtractionError("Unreadable PDF.")):
             response = self.client.post("/resume/", {"resume_pdf": pdf_file, "source": "panel"})
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "result-error", status_code=400)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "result-error")
 
     def test_panel_render_failure_returns_error(self):
         p_svc, p_bld = _mock_writer_and_builder()
@@ -149,8 +149,8 @@ class SubmitResumeTests(TestCase):
         p_bld_err = patch("apps.home.views.get_builder", return_value=fake_builder)
         with p_svc, p_bld_err:
             response = self.client.post("/resume/", {"resume_text": "My resume.", "source": "panel"})
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "result-error", status_code=400)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "result-error")
 
     def test_version_increments_on_each_panel_submission(self):
         p_svc, p_bld = _mock_writer_and_builder()
@@ -207,8 +207,8 @@ class RenderResumeHtmlTests(TestCase):
 
     def test_render_returns_error_when_no_yaml_submitted(self):
         response = self.client.post("/resume/render/")
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "result-error", status_code=400)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "result-error")
 
 
 class BuildResumePdfTests(TestCase):
