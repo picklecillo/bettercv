@@ -19,7 +19,14 @@
       hx-encoding="multipart/form-data"
       hx-indicator="#panel-loading"
       hx-disabled-elt="#panel-submit-btn"
-      {% if shared_resume %}hx-confirm="Uploading a new resume will replace the current one. Any active tool sessions may be affected. Continue?"{% endif %}>
+      {% if shared_resume %}hx-confirm="Uploading a new resume will replace the current one. Any active tool sessions may be affected. Continue?"{% endif %}
+      onsubmit="
+        var hasText = this.querySelector('[name=resume_text]').value.trim();
+        var hasFile = this.querySelector('[name=resume_pdf]').files.length > 0;
+        var err = document.getElementById('panel-upload-error');
+        if (!hasText && !hasFile) { err.style.display = 'block'; event.preventDefault(); event.stopImmediatePropagation(); return false; }
+        err.style.display = 'none';
+      ">
   {% csrf_token %}
   <input type="hidden" name="source" value="panel">
 
@@ -34,9 +41,9 @@
 
   <input type="file" name="resume_pdf" accept=".pdf" class="styled-file">
 
-  {% if error_message %}
-  <div class="result-error">{{ error_message }}</div>
-  {% endif %}
+  <div id="panel-upload-error" class="result-error" style="display:{% if error_message %}block{% else %}none{% endif %}">
+    {{ error_message|default:"Please paste your resume or upload a PDF." }}
+  </div>
 
   <div style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.25rem;">
     <span id="panel-loading" class="htmx-indicator" style="font-size:0.78rem; color:var(--ink-mid);">
