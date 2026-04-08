@@ -1,4 +1,4 @@
-{% if shared_resume %}
+{% if shared_resume and not show_replace_form %}
 <div id="loaded-badge" class="loaded-badge">
   <span class="loaded-badge-label">Loaded</span>
   <span>{{ shared_resume.resume_filename|default:"Resume" }}</span>
@@ -9,6 +9,8 @@
   </a>
 </div>
 <div id="replace-form" style="display:none">
+{% elif shared_resume %}
+<div id="replace-form">
 {% endif %}
 
 <form hx-post="/resume/"

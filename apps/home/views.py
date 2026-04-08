@@ -142,7 +142,7 @@ def render_preview_from_session(request):
 @require_GET
 def show_resume_upload(request):
     shared = sess.shared(request.session).resume
-    return render(request, "home/_panel_upload.html", {"shared_resume": shared})
+    return render(request, "home/_panel_upload.html", {"shared_resume": shared, "show_replace_form": True})
 
 
 def show_resume_editor(request):
