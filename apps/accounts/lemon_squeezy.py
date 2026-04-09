@@ -10,8 +10,9 @@ def build_checkout_url(variant_id: str, user_id: int, user_email: str) -> str:
     params = urlencode({
         'checkout[custom][user_id]': user_id,
         'checkout[email]': user_email,
+        'enabled': variant_id,
     })
-    return f"https://bettercv.lemonsqueezy.com/buy/{variant_id}?{params}"
+    return f"https://bettercv.lemonsqueezy.com/buy/44552d41-0cf0-444a-bb47-1ffbfca4d403/?{params}"
 
 
 def verify_webhook_signature(body: bytes, header_signature: str) -> bool:
