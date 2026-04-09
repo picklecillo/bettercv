@@ -37,7 +37,3 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          LS_VARIANT_STARTER: ${{ secrets.LS_VARIANT_STARTER }}
-          LS_VARIANT_STANDARD: ${{ secrets.LS_VARIANT_STANDARD }}
-          LS_VARIANT_PRO: ${{ secrets.LS_VARIANT_PRO }}
-          LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
