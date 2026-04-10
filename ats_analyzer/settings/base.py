@@ -170,6 +170,7 @@ CREDIT_PACKAGES = [
         'credits': 20,
         'price_usd': 5,
         'variant_id': env('LS_VARIANT_STARTER', default=''),
+        'product_id': env('LS_PRODUCT_STARTER', default=''),
     },
     {
         'id': 'standard',
@@ -177,6 +178,7 @@ CREDIT_PACKAGES = [
         'credits': 50,
         'price_usd': 10,
         'variant_id': env('LS_VARIANT_STANDARD', default=''),
+        'product_id': env('LS_PRODUCT_STANDARD', default=''),
     },
     {
         'id': 'pro',
@@ -184,6 +186,7 @@ CREDIT_PACKAGES = [
         'credits': 120,
         'price_usd': 20,
         'variant_id': env('LS_VARIANT_PRO', default=''),
+        'product_id': env('LS_PRODUCT_PRO', default=''),
     },
 ]
 

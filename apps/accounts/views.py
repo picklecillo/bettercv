@@ -156,6 +156,7 @@ def buy_credits(request):
         packages.append({
             **pkg,
             'checkout_url': build_checkout_url(
+                pkg['product_id'],
                 pkg['variant_id'],
                 request.user.id,
                 request.user.email,
