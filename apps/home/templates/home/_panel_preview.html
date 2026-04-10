@@ -1,3 +1,17 @@
+<style>
+  .design-settings-btn { background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--ink-mid); cursor: pointer; padding: 0.4rem 0.5rem; line-height: 1; transition: border-color 0.15s, color 0.15s; display: inline-flex; align-items: center; justify-content: center; }
+  .design-settings-btn:hover { border-color: var(--gold); color: var(--ink); }
+  .design-settings-dialog { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); box-shadow: 0 8px 32px rgba(26,26,46,0.18); padding: 1.5rem; min-width: 260px; max-width: 320px; position: fixed; left: 0; right: 66.667%; top: 0; bottom: 0; margin: auto; }
+  .design-settings-dialog::backdrop { background: rgba(26,26,46,0.35); }
+  .design-settings-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 1rem; }
+  .design-settings-select { width: 100%; background: var(--cream); border: 1px solid var(--border); border-radius: 3px; padding: 0.6rem 0.75rem; font-family: 'Outfit', sans-serif; font-size: 0.825rem; color: var(--ink); cursor: pointer; outline: none; transition: border-color 0.15s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%233d3d5c' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+  .design-settings-select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+  .design-settings-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mid); display: block; margin-bottom: 0.4rem; }
+  .design-settings-checkbox-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1rem; cursor: pointer; }
+  .design-settings-checkbox-row input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
+  .design-settings-checkbox-label { font-size: 0.78rem; color: var(--ink); }
+</style>
+
 <div style="display:flex; flex-direction:column; height:100%;">
 
   {% if shared_resume.resume_filename %}
@@ -29,10 +43,68 @@
       hx-target="#resume-panel"
       hx-swap="innerHTML"
     >Replace resume</a>
-    <form action="/resume/build/" method="post" style="flex:1; margin:0; display:flex; justify-content:flex-end;">
+    <form action="/resume/build/" method="post" style="flex:1; margin:0; display:flex; justify-content:flex-end; align-items:center; gap:0.5rem;">
       {% csrf_token %}
+      <button id="design-settings-btn" type="button" class="design-settings-btn" title="Design settings" aria-label="Open design settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
       <button type="submit" class="action-btn">Download PDF</button>
     </form>
   </div>
 
 </div>
+
+<dialog id="design-settings-dialog" class="design-settings-dialog">
+  <p class="design-settings-title">Design Settings</p>
+  <label class="design-settings-label" for="theme-select">RenderCV Theme</label>
+  <form id="design-form" hx-post="/resume/design/" hx-target="#resume-panel" hx-swap="innerHTML">
+    {% csrf_token %}
+    <select id="theme-select" name="theme" class="design-settings-select">
+      <option value="classic"{% if current_theme == "classic" %} selected{% endif %}>classic</option>
+      <option value="ember"{% if current_theme == "ember" %} selected{% endif %}>ember</option>
+      <option value="engineeringclassic"{% if current_theme == "engineeringclassic" %} selected{% endif %}>engineeringclassic</option>
+      <option value="engineeringresumes"{% if current_theme == "engineeringresumes" %} selected{% endif %}>engineeringresumes</option>
+      <option value="harvard"{% if current_theme == "harvard" %} selected{% endif %}>harvard</option>
+      <option value="ink"{% if current_theme == "ink" %} selected{% endif %}>ink</option>
+      <option value="moderncv"{% if current_theme == "moderncv" %} selected{% endif %}>moderncv</option>
+      <option value="opal"{% if current_theme == "opal" %} selected{% endif %}>opal</option>
+      <option value="sb2nov"{% if current_theme == "sb2nov" %} selected{% endif %}>sb2nov</option>
+    </select>
+    <label class="design-settings-checkbox-row">
+      <input type="checkbox" id="show-top-note-check" name="show_top_note" value="true"{% if current_show_top_note %} checked{% endif %}>
+      <span class="design-settings-checkbox-label">Show top note</span>
+    </label>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var settingsBtn  = document.getElementById('design-settings-btn');
+  var dialog       = document.getElementById('design-settings-dialog');
+  var themeSelect  = document.getElementById('theme-select');
+  var topNoteCheck = document.getElementById('show-top-note-check');
+  var designForm   = document.getElementById('design-form');
+
+  function submitSettings() {
+    dialog.close();
+    designForm.requestSubmit();
+  }
+
+  settingsBtn.addEventListener('click', function () {
+    dialog.showModal();
+  });
+
+  themeSelect.addEventListener('change', submitSettings);
+  topNoteCheck.addEventListener('change', submitSettings);
+
+  dialog.addEventListener('click', function (e) {
+    var rect = dialog.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+      dialog.close();
+    }
+  });
+}());
+</script>

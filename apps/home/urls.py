@@ -12,4 +12,5 @@ urlpatterns = [
     path("resume/upload/", views.show_resume_upload, name="resume-upload"),
     path("resume/editor/", views.show_resume_editor, name="resume-editor"),
     path("resume/preview/", views.render_preview_from_session, name="resume-preview"),
+    path("resume/design/", views.apply_design, name="resume-design"),
 ]

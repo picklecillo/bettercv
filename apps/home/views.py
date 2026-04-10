@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -25,8 +26,20 @@ def sitemap_xml(request):
     return render(request, "home/sitemap.xml", content_type="application/xml")
 
 
+_VALID_THEMES = frozenset({
+    "classic", "ember", "engineeringclassic", "engineeringresumes",
+    "harvard", "ink", "moderncv", "opal", "sb2nov",
+})
+
+
 def _panel_context(request) -> dict:
-    return sess.shared(request.session).panel_context()
+    ctx = sess.shared(request.session).panel_context()
+    yaml = ctx.get("shared_yaml") or ""
+    m = re.search(r"^\s*theme:\s*(\S+)", yaml, re.MULTILINE)
+    ctx["current_theme"] = m.group(1) if m else "classic"
+    stn = re.search(r"^\s*show_top_note:\s*(\S+)", yaml, re.MULTILINE)
+    ctx["current_show_top_note"] = bool(stn and stn.group(1) == "true")
+    return ctx
 
 
 def index(request):
@@ -149,6 +162,47 @@ def show_resume_editor(request):
     if not ctx["shared_yaml"]:
         ctx = {**ctx, "render_error": "No resume loaded. Please upload a resume first."}
     return render(request, "home/_panel_editor.html", ctx)
+
+
+@require_POST
+def apply_design(request):
+    """Update design.theme and page.show_top_note in session YAML, re-render, return preview."""
+    theme = request.POST.get("theme", "classic").strip()
+    if theme not in _VALID_THEMES:
+        theme = "classic"
+
+    shared_store = sess.shared(request.session)
+    yaml_content = shared_store.yaml
+    if not yaml_content:
+        return HttpResponse("No YAML in session.", status=400)
+
+    # Apply theme
+    updated = re.sub(r"^(\s*theme:\s*)\S+", rf"\g<1>{theme}", yaml_content, flags=re.MULTILINE)
+    if updated == yaml_content and "theme:" not in yaml_content:
+        updated += f"\ndesign:\n  theme: {theme}"
+
+    # Apply show_top_note
+    show_top_note = "true" if request.POST.get("show_top_note") else "false"
+    stn_updated = re.sub(r"^(\s*show_top_note:\s*)\S+", rf"\g<1>{show_top_note}", updated, flags=re.MULTILINE)
+    if stn_updated == updated:
+        if re.search(r"^page:", updated, re.MULTILINE):
+            updated = re.sub(r"^(page:)", rf"\1\n  show_top_note: {show_top_note}", updated, flags=re.MULTILINE)
+        else:
+            updated += f"\npage:\n  show_top_note: {show_top_note}"
+    else:
+        updated = stn_updated
+
+    try:
+        html_content = get_builder().render_html(updated, request.session.session_key or "panel")
+    except RenderCVBuildError as e:
+        ctx = {**_panel_context(request), "shared_yaml": updated, "render_error": str(e)}
+        return render(request, "home/_panel_editor.html", ctx, status=422)
+
+    shared_store.set_yaml(updated)
+    shared_store.set_html(html_content)
+    request.session.save()
+
+    return render(request, "home/_panel_preview.html", _panel_context(request))
 
 
 @require_POST
