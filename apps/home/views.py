@@ -181,14 +181,16 @@ def apply_design(request):
     if updated == yaml_content and "theme:" not in yaml_content:
         updated += f"\ndesign:\n  theme: {theme}"
 
-    # Apply show_top_note
+    # Apply show_top_note (lives at design.page.show_top_note)
     show_top_note = "true" if request.POST.get("show_top_note") else "false"
-    stn_updated = re.sub(r"^(\s*show_top_note:\s*)\S+", rf"\g<1>{show_top_note}", updated, flags=re.MULTILINE)
+    stn_updated = re.sub(r"^(\s+show_top_note:\s*)\S+", f"\\g<1>{show_top_note}", updated, flags=re.MULTILINE)
     if stn_updated == updated:
-        if re.search(r"^page:", updated, re.MULTILINE):
-            updated = re.sub(r"^(page:)", rf"\1\n  show_top_note: {show_top_note}", updated, flags=re.MULTILINE)
+        if re.search(r"^\s+page:", updated, re.MULTILINE):
+            # page: exists under design — add show_top_note under it
+            updated = re.sub(r"^(\s+page:)", f"\\g<1>\n    show_top_note: {show_top_note}", updated, flags=re.MULTILINE)
         else:
-            updated += f"\npage:\n  show_top_note: {show_top_note}"
+            # No page: section — append it after the theme: line inside design:
+            updated = re.sub(r"^(\s+theme:\s*\S+)", f"\\g<1>\n  page:\n    show_top_note: {show_top_note}", updated, flags=re.MULTILINE)
     else:
         updated = stn_updated
 

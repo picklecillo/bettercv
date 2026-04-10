@@ -114,12 +114,15 @@
 
   function applyShowTopNote(checked) {
     var val = checked ? 'true' : 'false';
-    var updated = editor.value.replace(/^(\s*show_top_note:\s*)\S+/m, '$1' + val);
+    // show_top_note lives under design.page, so always indented
+    var updated = editor.value.replace(/^(\s+show_top_note:\s*)\S+/m, '$1' + val);
     if (updated === editor.value) {
-      if (/^page:/m.test(editor.value)) {
-        updated = editor.value.replace(/^(page:)/m, '$1\n  show_top_note: ' + val);
+      if (/^\s+page:/m.test(editor.value)) {
+        // page: exists under design — add show_top_note under it
+        updated = editor.value.replace(/^(\s+page:)/m, '$1\n    show_top_note: ' + val);
       } else {
-        updated = editor.value + '\npage:\n  show_top_note: ' + val;
+        // No page: section — insert after theme: line inside design:
+        updated = editor.value.replace(/^(\s+theme:\s*\S+)/m, '$1\n  page:\n    show_top_note: ' + val);
       }
     }
     editor.value = updated;
