@@ -15,18 +15,18 @@ class ClaudeServiceError(Exception):
 _ERROR_MESSAGES: dict[str, tuple[str, int]] = {
     "authentication_error":  ("Invalid API key. Check your ANTHROPIC_API_KEY.", 502),
     "permission_error":      ("Your API key doesn't have permission to use this model.", 502),
-    "invalid_request_error": ("Bad request sent to Claude API.", 502),
-    "not_found_error":       ("Claude model not found.", 502),
+    "invalid_request_error": ("Bad request sent to AI API.", 502),
+    "not_found_error":       ("AI model not found.", 502),
     "rate_limit_error":      ("Rate limit hit. Please wait a moment and try again.", 502),
-    "api_error":             ("Claude API internal error. Please try again.", 502),
-    "overloaded_error":      ("Claude is currently overloaded. Please try again shortly.", 502),
+    "api_error":             ("AI API internal error. Please try again.", 502),
+    "overloaded_error":      ("AI is currently overloaded. Please try again shortly.", 502),
 }
 
 
 def translate_api_error(e: anthropic.APIStatusError) -> ClaudeServiceError:
     if "credit balance is too low" in str(e):
         return ClaudeServiceError(
-            "Your Anthropic credit balance is too low. "
+            "Your AI API credit balance is too low. "
             "Please add credits at console.anthropic.com.",
             402,
         )
@@ -37,7 +37,7 @@ def translate_api_error(e: anthropic.APIStatusError) -> ClaudeServiceError:
 
 def translate_connection_error(e: anthropic.APIConnectionError) -> ClaudeServiceError:
     return ClaudeServiceError(
-        "Could not reach the Claude API. Check your internet connection.", 503
+        "Could not reach the AI API. Check your internet connection.", 503
     )
 
 
