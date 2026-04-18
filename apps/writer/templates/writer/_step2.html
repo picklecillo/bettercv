@@ -191,6 +191,7 @@
           a.download = 'resume.pdf';
           a.click();
           URL.revokeObjectURL(url);
+          gtag('event', 'pdf_download', {tool_name: 'resume_writer'});
         });
       }
       return response.text().then(function (html) {

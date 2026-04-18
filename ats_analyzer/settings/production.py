@@ -1,6 +1,8 @@
 from .base import *  # noqa: F403
 from .base import DEBUG, ENV
 
+GOOGLE_ANALYTICS_ID = "G-79JC0MWVW2"
+
 
 
 if not DEBUG and ENV == "production":

@@ -43,7 +43,7 @@
           <div class="pkg-label">{{ pkg.label }}</div>
           <div class="pkg-credits">{{ pkg.credits }} <small>credits</small></div>
           <div class="pkg-price">${{ pkg.price_usd }}</div>
-          <a href="{{ pkg.checkout_url }}" class="pkg-cta">Buy now</a>
+          <a href="{{ pkg.checkout_url }}" class="pkg-cta" onclick="gtag('event', 'buy_tokens_click', {package_id: '{{ pkg.id }}', credits: {{ pkg.credits }}, price_usd: {{ pkg.price_usd }}})">Buy now</a>
         </div>
       {% endfor %}
     </div>
