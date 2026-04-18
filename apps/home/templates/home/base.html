@@ -97,6 +97,32 @@
     padding: 0.625rem 1.5rem;
   }
 
+  /* ── Mobile tabs ── */
+  .mobile-tabs {
+    display: none;
+    flex-shrink: 0;
+    background: var(--ink);
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .mobile-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    margin-bottom: -3px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .mobile-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
   @media (max-width: 767px) {
     .logo { margin-right: 0; }
     .site-nav { display: none; }
@@ -104,6 +130,23 @@
     .hamburger-btn { display: flex; }
     .mobile-tool-label { display: block; }
     .site-header { position: relative; }
+
+    .mobile-tabs { display: flex; }
+
+    .app-shell { flex-direction: column !important; overflow: hidden; }
+
+    .app-shell > .panel-col {
+      width: 100% !important;
+      min-width: 0 !important;
+      border-right: none;
+      border-bottom: none;
+      flex: 1;
+    }
+
+    .app-shell > .content-col { flex: 1; min-height: 0; overflow: hidden; }
+
+    .app-shell[data-tab="resume"] > .content-col { display: none !important; }
+    .app-shell[data-tab="results"] > .panel-col { display: none !important; }
   }
 
   .credit-badge {
@@ -404,10 +447,38 @@
     });
   })();
 </script>
+<script>
+  (function() {
+    function switchTab(name) {
+      var shell = document.getElementById('app-shell');
+      if (!shell) return;
+      shell.setAttribute('data-tab', name);
+      document.querySelectorAll('.mobile-tab').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.tab === name);
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      var tab = e.target.closest('.mobile-tab');
+      if (tab) switchTab(tab.dataset.tab);
+    });
+
+    document.addEventListener('htmx:afterSwap', function(e) {
+      var contentCol = document.querySelector('.content-col');
+      if (contentCol && contentCol.contains(e.detail.target)) {
+        switchTab('results');
+      }
+    });
+  })();
+</script>
 {% endblock %}
 
 {% block page %}
-<div class="app-shell">
+<div class="mobile-tabs" id="mobile-tabs">
+  <button class="mobile-tab active" data-tab="resume">Resume</button>
+  <button class="mobile-tab" data-tab="results">{% block tab_label %}Results{% endblock %}</button>
+</div>
+<div class="app-shell" id="app-shell" data-tab="resume">
 
   <aside class="panel-col">
     <div class="panel-header">
