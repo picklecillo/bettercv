@@ -314,6 +314,16 @@
     }
     .reprocess-btn.htmx-request { opacity: 0.6; cursor: not-allowed; }
 
+    @media (max-width: 767px) {
+      .workspace { padding: 1rem 1rem 3rem; }
+
+      .summary-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .summary-table { min-width: 480px; }
+
+      .analysis-result { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .analysis-result table { min-width: 400px; }
+    }
+
     .start-over a, .start-over-btn {
       font-size: 0.72rem;
       font-weight: 500;
@@ -357,6 +367,7 @@
     <!-- Summary table -->
     <div class="summary-section">
       <span class="section-label">Score Summary</span>
+      <div class="summary-table-scroll">
       <table class="summary-table">
         <thead>
           <tr>
@@ -434,6 +445,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
 
     <!-- Add JD form -->
