@@ -31,6 +31,17 @@
       .coach-grid { grid-template-columns: 1fr; height: auto; }
     }
 
+    @media (max-width: 767px) {
+      #main-content { height: auto !important; overflow: visible !important; }
+      .coach-grid { height: auto; overflow: visible; padding: 1rem; gap: 1rem; }
+      .panel { overflow: visible; height: auto; }
+      .right-panel { height: auto; overflow: visible; }
+      #chat-panes { overflow: visible; height: auto; }
+      .chat-pane { overflow: visible; height: auto; }
+      .chat-transcript { min-height: 280px; max-height: 55vh; }
+      .experience-list { max-height: 180px; overflow-y: auto; }
+    }
+
     /* ── Panels ── */
     .panel {
       background: var(--surface);
