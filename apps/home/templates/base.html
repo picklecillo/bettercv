@@ -98,6 +98,13 @@
     gtag('config', '{{ google_analytics_id }}');
   </script>
   {% endif %}
+
+  {% if sentry_dsn %}
+  <script src="https://cdn.jsdelivr.net/npm/@sentry/browser@8/build/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    Sentry.init({ dsn: "{{ sentry_dsn }}" });
+  </script>
+  {% endif %}
 </head>
 <body>
 

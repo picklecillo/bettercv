@@ -14,6 +14,7 @@ from logging import config as logging_config
 from pathlib import Path
 
 import environ
+import sentry_sdk
 
 from .logging import LOGGING
 
@@ -51,6 +52,16 @@ INSTALLED_APPS = [
 ]
 
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY")
+
+SENTRY_DSN = env("SENTRY_DSN", default="")
+
+if SENTRY_DSN and ENV == "production":
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=ENV,
+        traces_sample_rate=0.0,
+        send_default_pii=False,
+    )
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
