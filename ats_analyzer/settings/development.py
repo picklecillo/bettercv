@@ -4,6 +4,7 @@ from .base import *  # noqa: F403
 from .base import (
     INSTALLED_APPS,
     TEMPLATES,
+    ALLOWED_HOSTS,
 )
 from .base import (
     MIDDLEWARE as BASE_MIDDLEWARE,
