@@ -29,6 +29,83 @@
     margin-left: 1rem;
   }
 
+  /* ── Mobile hamburger ── */
+  .hamburger-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cream);
+    padding: 0.25rem;
+    margin-left: auto;
+  }
+
+  .mobile-tool-label {
+    display: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-left: 0.75rem;
+  }
+
+  .mobile-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--ink);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 3px solid var(--gold);
+    z-index: 100;
+  }
+  .mobile-menu.open { display: block; }
+
+  .mobile-nav-link {
+    display: block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold-lt);
+    text-decoration: none;
+    padding: 0.875rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .mobile-nav-link:hover { background: rgba(255,255,255,0.08); color: var(--cream); }
+  .mobile-nav-link.active { color: var(--gold); }
+
+  .mobile-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin: 0.25rem 0;
+  }
+
+  .mobile-user-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1.5rem;
+  }
+
+  @media (max-width: 767px) {
+    .logo { margin-right: 0; }
+    .site-nav { display: none; }
+    .user-section { display: none; }
+    .hamburger-btn { display: flex; }
+    .mobile-tool-label { display: block; }
+    .site-header { position: relative; }
+  }
+
   .credit-badge {
     font-size: 0.68rem;
     font-weight: 700;
@@ -256,6 +333,11 @@
 {% block header %}
 <header class="site-header">
   <a href="/" class="logo">BetterCV</a>
+
+  <span class="mobile-tool-label">
+    {% if active_tool == 'analyzer' %}ATS Analyzer{% elif active_tool == 'coach' %}Resume Coach{% elif active_tool == 'compare' %}Compare JDs{% endif %}
+  </span>
+
   <nav class="site-nav">
     <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
     <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
@@ -274,7 +356,54 @@
       <a href="/accounts/register/" class="nav-link">Register</a>
     {% endif %}
   </div>
+
+  <button class="hamburger-btn" id="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+
+  <div id="mobile-menu" class="mobile-menu" aria-hidden="true">
+    <a href="/analyzer/" class="mobile-nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
+    <a href="/coach/" class="mobile-nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
+    <a href="/compare/" class="mobile-nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
+    <hr class="mobile-divider">
+    {% if user.is_authenticated %}
+      <div class="mobile-user-row">
+        <span class="credit-badge">{{ user.profile.credits|default:0 }} cr</span>
+        <a href="/accounts/" class="mobile-nav-link" style="padding:0; flex:1;">{{ user.email }}</a>
+      </div>
+      <form method="POST" action="/accounts/logout/">
+        {% csrf_token %}
+        <button type="submit" class="mobile-nav-link">Logout</button>
+      </form>
+    {% else %}
+      <a href="/accounts/login/" class="mobile-nav-link">Login</a>
+      <a href="/accounts/register/" class="mobile-nav-link">Register</a>
+    {% endif %}
+  </div>
 </header>
+<script>
+  (function() {
+    var btn = document.getElementById('hamburger-btn');
+    var menu = document.getElementById('mobile-menu');
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var open = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open);
+      menu.setAttribute('aria-hidden', !open);
+    });
+    document.addEventListener('click', function(e) {
+      if (!menu.contains(e.target) && e.target !== btn) {
+        menu.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        menu.setAttribute('aria-hidden', 'true');
+      }
+    });
+  })();
+</script>
 {% endblock %}
 
 {% block page %}
