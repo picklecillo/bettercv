@@ -7,7 +7,9 @@
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:yamlresume.dev)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(uv add:*)"
+      "Bash(uv add:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs"
     ]
   }
 }
