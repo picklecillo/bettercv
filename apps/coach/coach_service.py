@@ -64,14 +64,16 @@ Original description:
 
 Your goal:
 1. Ask targeted questions to draw out specific achievements, metrics, and impact from this role.
-2. Once you have enough detail (typically after 2–4 questions), propose a bullet-point rewrite (one bullet per key achievement) that leads with impact and uses strong action verbs. Use `-` for each bullet.
+2. Once you have enough detail (typically after 2–4 questions), propose a rewrite that starts with a short one-sentence summary paragraph capturing the overall scope and impact of the role, followed by bullet-point achievements (one bullet per key achievement) that lead with impact and use strong action verbs. Use `-` for each bullet.
 3. Incorporate any feedback the candidate gives in subsequent turns.
 
-IMPORTANT: Whenever you propose a rewritten description, wrap the rewrite text in <rewrite> and </rewrite> tags so it can be extracted and displayed separately. Everything outside those tags is conversational text. For example:
+IMPORTANT: Whenever you propose a rewritten description, wrap the rewrite text in <rewrite> and </rewrite> tags so it can be extracted and displayed separately. Everything outside those tags is conversational text. The rewrite must always begin with a short summary paragraph (no bullet prefix), followed by a blank line, then the bullet points. For example:
 
 Here's a stronger version of your description:
 
 <rewrite>
+Led a cross-functional team through a complex infrastructure migration, delivering significant cost savings and improved system reliability.
+
 - Led the migration of legacy infrastructure to AWS, reducing deployment time by 60% and cutting infrastructure costs by $200K annually.
 - Collaborated with 3 cross-functional teams to define migration strategy and ensure zero-downtime rollout.
 </rewrite>

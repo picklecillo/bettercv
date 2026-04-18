@@ -14,7 +14,7 @@ from apps.shared.decorators import htmx_login_required
 from apps.shared.sse import SSEEvent, SseStream, no_credits_response
 
 from .coach_service import CoachParseError, WorkExperience, get_coach_service
-from .yaml_utils import ExperienceNotFoundError, apply_experience_highlights
+from .yaml_utils import ExperienceNotFoundError, apply_experience_rewrite
 
 PARSE_COST  = CreditCost(amount=1, description='Resume coaching — parse CV')
 STREAM_COST = CreditCost(amount=1, description='Resume coaching — chat turn')
@@ -303,7 +303,7 @@ def apply(request):
     experience = WorkExperience(**experience_data)
 
     try:
-        updated_yaml = apply_experience_highlights(
+        updated_yaml = apply_experience_rewrite(
             shared_yaml,
             company=experience.company,
             position=experience.title,
