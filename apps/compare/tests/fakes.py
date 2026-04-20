@@ -20,6 +20,12 @@ class FakeCompareService(CompareService):
     def stream_analysis(self, resume_text: str, jd_text: str) -> Iterator[str]:
         yield "Strong match for this role."
 
+    def stream_cover_letter(self, resume_text: str, jd_text: str) -> Iterator[str]:
+        yield "Dear Hiring Manager, I am excited to apply for this role."
+
+    def stream_interests(self, resume_text: str, jd_text: str) -> Iterator[str]:
+        yield "What excites me most about this company is its mission."
+
     def extract_metadata(self, analysis_text: str, jd_text: str = "") -> JDMetadata:
         if self._raise_metadata:
             raise self._raise_metadata

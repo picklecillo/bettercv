@@ -431,3 +431,201 @@ class StreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
         with patch("apps.compare.views.get_compare_service") as mock_svc:
             self._consume(self.client.get(f"/compare/stream/?key={nonce}"))
         mock_svc.return_value.stream_analysis.assert_not_called()
+
+
+def _seed_with_analyzed_jd(client, jd_id="jd-abc"):
+    session = client.session
+    session["compare"] = {
+        "resume_text": "My full resume.",
+        "jds": {
+            jd_id: {
+                "jd_text": "Senior engineer at Acme.",
+                "analysis": "## ATS Score\n80/100",
+                "metadata": {"company": "Acme", "title": "Engineer", "score_low": 75, "score_high": 80},
+            }
+        },
+    }
+    session.save()
+
+
+class ApplyStartTests(TestCase):
+
+    def test_returns_200_with_modal_html(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("apply-stream-area", content)
+        self.assertIn("/compare/apply-stream/", content)
+
+    def test_returns_cover_letter_tab_active(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        content = response.content.decode()
+        self.assertIn("apply-tab-active", content)
+        self.assertIn("Cover Letter", content)
+
+    def test_returns_interests_tab_active(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "interests"})
+        content = response.content.decode()
+        self.assertIn("apply-tab-active", content)
+        self.assertIn("What interests you", content)
+
+    def test_includes_company_title_in_header(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        self.assertIn(b"Acme", response.content)
+
+    def test_unknown_jd_id_returns_400(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "nonexistent", "mode": "cover_letter"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_mode_returns_400(self):
+        _seed_with_analyzed_jd(self.client)
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "hack"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_no_session_returns_400(self):
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_stores_nonce_in_session(self):
+        _seed_with_analyzed_jd(self.client)
+        self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        nonce_keys = [k for k in self.client.session.keys() if k not in ("compare",)]
+        self.assertTrue(any(
+            isinstance(self.client.session[k], dict) and "mode" in self.client.session[k]
+            for k in nonce_keys
+        ))
+
+    def test_cached_response_shown_without_sse(self):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {
+                "jd-abc": {
+                    "jd_text": "Senior engineer at Acme.",
+                    "analysis": "## ATS Score\n80/100",
+                    "metadata": {"company": "Acme", "title": "Engineer", "score_low": 75, "score_high": 80},
+                    "apply_cache": {"cover_letter": "Dear Hiring Manager, I am a great fit."},
+                }
+            },
+        }
+        session.save()
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        content = response.content.decode()
+        self.assertIn("Dear Hiring Manager", content)
+        self.assertNotIn("apply-stream-area", content)
+        self.assertNotIn("/compare/apply-stream/", content)
+
+    def test_cached_response_shows_regenerate_button(self):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {
+                "jd-abc": {
+                    "jd_text": "Senior engineer at Acme.",
+                    "analysis": None,
+                    "metadata": None,
+                    "apply_cache": {"cover_letter": "Dear Hiring Manager, I am a great fit."},
+                }
+            },
+        }
+        session.save()
+        response = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        self.assertIn(b"Regenerate", response.content)
+
+    def test_regenerate_flag_bypasses_cache(self):
+        session = self.client.session
+        session["compare"] = {
+            "resume_text": "My resume.",
+            "jds": {
+                "jd-abc": {
+                    "jd_text": "Senior engineer at Acme.",
+                    "analysis": None,
+                    "metadata": None,
+                    "apply_cache": {"cover_letter": "Old cached text."},
+                }
+            },
+        }
+        session.save()
+        response = self.client.post("/compare/apply-start/",
+                                    {"jd_id": "jd-abc", "mode": "cover_letter", "regenerate": "1"})
+        content = response.content.decode()
+        self.assertIn("apply-stream-area", content)
+        self.assertNotIn("Old cached text", content)
+
+
+class ApplyStreamTests(AuthenticatedMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def _setup_apply_stream(self, mode="cover_letter"):
+        _seed_with_analyzed_jd(self.client)
+        r = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": mode})
+        nonce = re.search(r'/compare/apply-stream/\?key=([\w-]+)', r.content.decode()).group(1)
+        return nonce
+
+    def test_missing_key_returns_400(self):
+        response = self.client.get("/compare/apply-stream/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_cover_letter_streams_chunk_and_wrap(self):
+        fake = FakeCompareService()
+        nonce = self._setup_apply_stream("cover_letter")
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            content = self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        self.assertIn("event: chunk", content)
+        self.assertIn("event: wrap", content)
+        self.assertIn("event: done", content)
+
+    def test_interests_streams_chunk_and_wrap(self):
+        fake = FakeCompareService()
+        nonce = self._setup_apply_stream("interests")
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            content = self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        self.assertIn("event: chunk", content)
+        self.assertIn("event: wrap", content)
+
+    def test_wrap_contains_copy_and_regenerate_buttons(self):
+        fake = FakeCompareService()
+        nonce = self._setup_apply_stream("cover_letter")
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            content = self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        self.assertIn("apply-copy-btn", content)
+        self.assertIn("apply-regen-btn", content)
+
+    def test_stream_saves_to_apply_cache(self):
+        fake = FakeCompareService()
+        nonce = self._setup_apply_stream("cover_letter")
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        jd = self.client.session["compare"]["jds"]["jd-abc"]
+        self.assertIn("cover_letter", jd.get("apply_cache", {}))
+        self.assertIn("Dear Hiring Manager", jd["apply_cache"]["cover_letter"])
+
+    def test_nonce_is_one_time_use(self):
+        fake = FakeCompareService()
+        nonce = self._setup_apply_stream("cover_letter")
+        with patch("apps.compare.views.get_compare_service", return_value=fake):
+            self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        response = self.client.get(f"/compare/apply-stream/?key={nonce}")
+        self.assertEqual(response.status_code, 400)
+
+
+class ApplyStreamZeroCreditsTests(ZeroCreditsMixin, TestCase):
+
+    def _consume(self, response):
+        return b"".join(response.streaming_content).decode()
+
+    def test_zero_credits_returns_sse_error(self):
+        _seed_with_analyzed_jd(self.client)
+        r = self.client.post("/compare/apply-start/", {"jd_id": "jd-abc", "mode": "cover_letter"})
+        nonce = re.search(r'/compare/apply-stream/\?key=([\w-]+)', r.content.decode()).group(1)
+        with patch("apps.compare.views.get_compare_service", return_value=FakeCompareService()):
+            content = self._consume(self.client.get(f"/compare/apply-stream/?key={nonce}"))
+        self.assertIn("credits-error", content)
+        self.assertIn("event: done", content)

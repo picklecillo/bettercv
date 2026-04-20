@@ -48,6 +48,22 @@ Job description:
 ATS analysis:
 {analysis_text}"""
 
+_COVER_LETTER_SYSTEM = (
+    "You are an expert cover letter writer. Given a resume and job description, "
+    "write a compelling, concise cover letter tailored to the role. "
+    "Use only information from the resume. Be specific, professional, and avoid generic phrases."
+)
+
+_INTERESTS_SYSTEM = (
+    "You write first-person responses to the interview question "
+    "\"What interests you about working for this company?\" "
+    "Draw only on signals from the job description and resume. "
+    "Write as the applicant (\"I am drawn to...\", \"What excites me...\"). "
+    "Be specific and genuine, not flattering. 2-3 paragraphs maximum."
+)
+
+_APPLY_USER_PROMPT = "Resume:\n{resume_text}\n\nJob Description:\n{jd_text}"
+
 
 class CompareService:
     def __init__(self, client: anthropic.Anthropic) -> None:
@@ -60,6 +76,40 @@ class CompareService:
                 max_tokens=_MAX_TOKENS,
                 system=ATS_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
+                    resume_text=resume_text,
+                    jd_text=jd_text,
+                )}],
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
+
+    def stream_cover_letter(self, resume_text: str, jd_text: str) -> Iterator[str]:
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=_COVER_LETTER_SYSTEM,
+                messages=[{"role": "user", "content": _APPLY_USER_PROMPT.format(
+                    resume_text=resume_text,
+                    jd_text=jd_text,
+                )}],
+            ) as s:
+                yield from s.text_stream
+        except anthropic.APIStatusError as e:
+            raise translate_api_error(e) from e
+        except anthropic.APIConnectionError as e:
+            raise translate_connection_error(e) from e
+
+    def stream_interests(self, resume_text: str, jd_text: str) -> Iterator[str]:
+        try:
+            with self._client.messages.stream(
+                model=MODEL,
+                max_tokens=_MAX_TOKENS,
+                system=_INTERESTS_SYSTEM,
+                messages=[{"role": "user", "content": _APPLY_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,
                 )}],

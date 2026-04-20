@@ -195,6 +195,16 @@ class CompareStore:
         if hasattr(self._s, "save"):
             self._s.save()
 
+    def set_jd_apply_cache(self, jd_id: str, mode: str, text: str) -> None:
+        """Persist generated cover letter / interests text (safe to call inside generators)."""
+        compare = self._s.get("compare") or {}
+        jds = compare.get("jds", {})
+        if jd_id in jds:
+            jds[jd_id].setdefault("apply_cache", {})[mode] = text
+        _mark_modified(self._s)
+        if hasattr(self._s, "save"):
+            self._s.save()
+
     def update_resume(self, resume_text: str, resume_version: int | None) -> None:
         compare = self._s.get("compare") or {}
         compare["resume_text"] = resume_text

@@ -16,6 +16,7 @@ from apps.shared.sse import SSEEvent, SseStream, no_credits_response
 from .compare_service import CompareMetadataError, get_compare_service
 
 STREAM_COST = CreditCost(amount=1, description='JD comparison')
+APPLY_COST = CreditCost(amount=1, description='JD comparison — application help')
 
 
 def _error(message: str, status: int = 400) -> HttpResponse:
@@ -262,6 +263,16 @@ def stream(request):
             f'hx-confirm="Remove this analysis?">'
             f'Remove</button>'
         )
+        help_btn = (
+            f'<button class="help-btn" '
+            f'hx-post="/compare/apply-start/" '
+            f'hx-vals=\'{{"jd_id": "{jd_id}", "mode": "cover_letter"}}\' '
+            f'hx-include="[name=csrfmiddlewaretoken]" '
+            f'hx-target="#apply-modal-content" '
+            f'hx-swap="innerHTML" '
+            f'hx-on::after-request="document.getElementById(\'apply-modal\').showModal()">'
+            f'Help me apply</button>'
+        )
         row_html = (
             f'<tr id="summary-row-{jd_id}" data-score-high="{score_high_val}">'
             f'<td>{jd_num}</td>'
@@ -271,7 +282,7 @@ def stream(request):
             f'<span class="best-star" aria-label="Best score">★</span>'
             f'</td>'
             f'<td>Done</td>'
-            f'<td>{remove_btn}</td>'
+            f'<td>{help_btn} {remove_btn}</td>'
             f'</tr>'
         )
         yield SSEEvent("metadata", row_html)
@@ -327,3 +338,162 @@ def reanalyze(request, jd_id: str):
         f'</div>'
     )
     return HttpResponse(card_html, content_type="text/html")
+
+
+def _apply_tabs_html(jd_id: str, mode: str) -> str:
+    cover_active = 'apply-tab-active' if mode == 'cover_letter' else ''
+    interests_active = 'apply-tab-active' if mode == 'interests' else ''
+    return (
+        f'<div class="apply-tabs">'
+        f'  <button class="apply-tab {cover_active}" '
+        f'    hx-post="/compare/apply-start/" '
+        f'    hx-vals=\'{{"jd_id": "{jd_id}", "mode": "cover_letter"}}\' '
+        f'    hx-include="[name=csrfmiddlewaretoken]" '
+        f'    hx-target="#apply-modal-content" '
+        f'    hx-swap="innerHTML">Cover Letter</button>'
+        f'  <button class="apply-tab {interests_active}" '
+        f'    hx-post="/compare/apply-start/" '
+        f'    hx-vals=\'{{"jd_id": "{jd_id}", "mode": "interests"}}\' '
+        f'    hx-include="[name=csrfmiddlewaretoken]" '
+        f'    hx-target="#apply-modal-content" '
+        f'    hx-swap="innerHTML">What interests you?</button>'
+        f'</div>'
+    )
+
+
+def _apply_modal_header(label: str) -> str:
+    return (
+        f'<div class="apply-modal-header">'
+        f'  <span class="apply-modal-title">{escape(label)}</span>'
+        f'  <button class="apply-modal-close" onclick="document.getElementById(\'apply-modal\').close()">×</button>'
+        f'</div>'
+    )
+
+
+def _apply_cached_body(jd_id: str, mode: str, cached_text: str) -> str:
+    rendered = md.markdown(cached_text, extensions=["tables"])
+    copy_btn = (
+        '<button class="apply-copy-btn" '
+        'onclick="var t=this.closest(\'.apply-result\').querySelector(\'.apply-result-body\');'
+        'navigator.clipboard.writeText(t.innerText)">Copy</button>'
+    )
+    regen_btn = (
+        f'<button class="apply-regen-btn" '
+        f'hx-post="/compare/apply-start/" '
+        f'hx-vals=\'{{"jd_id": "{jd_id}", "mode": "{mode}", "regenerate": "1"}}\' '
+        f'hx-include="[name=csrfmiddlewaretoken]" '
+        f'hx-target="#apply-modal-content" '
+        f'hx-swap="innerHTML">Regenerate</button>'
+    )
+    return (
+        f'<div class="apply-result">'
+        f'  <div class="apply-result-body analysis-result">{rendered}</div>'
+        f'  <div class="apply-result-actions">{copy_btn}{regen_btn}</div>'
+        f'</div>'
+    )
+
+
+def _apply_stream_body(jd_id: str, mode: str, nonce_key: str) -> str:
+    mode_label = 'Cover Letter' if mode == 'cover_letter' else 'What interests you?'
+    return (
+        f'<div class="apply-stream-area" '
+        f'     hx-ext="sse" '
+        f'     sse-connect="/compare/apply-stream/?key={nonce_key}" '
+        f'     sse-close="done">'
+        f'  <div class="stream-status">Generating {escape(mode_label)}<span class="dots">...</span></div>'
+        f'  <div id="apply-stream-out" sse-swap="chunk" hx-swap="beforeend" class="apply-stream-output"></div>'
+        f'  <div sse-swap="wrap" hx-target=".apply-stream-area" hx-swap="outerHTML"></div>'
+        f'</div>'
+    )
+
+
+@require_POST
+def apply_start(request):
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
+        return _error("Session expired. Please re-upload your resume.")
+
+    jd_id = request.POST.get("jd_id", "")
+    mode = request.POST.get("mode", "cover_letter")
+    regenerate = request.POST.get("regenerate", "") == "1"
+
+    if mode not in ("cover_letter", "interests"):
+        return _error("Invalid mode.", status=400)
+
+    jd = compare_store.get_jd(jd_id)
+    if not jd:
+        return _error("Unknown job description.", status=400)
+
+    metadata = jd.get("metadata")
+    label = f"{metadata['company']} · {metadata['title']}" if metadata else "Application Help"
+
+    cached = jd.get("apply_cache", {}).get(mode) if not regenerate else None
+
+    if cached:
+        body = _apply_cached_body(jd_id, mode, cached)
+    else:
+        nonce_key = sess.nonce(request.session).put({
+            "jd_id": jd_id,
+            "mode": mode,
+            "resume_text": compare_store.resume_text,
+            "jd_text": jd["jd_text"],
+        })
+        body = _apply_stream_body(jd_id, mode, nonce_key)
+
+    html = _apply_modal_header(label) + _apply_tabs_html(jd_id, mode) + body
+    return HttpResponse(html, content_type="text/html")
+
+
+@htmx_login_required
+def apply_stream(request):
+    key = request.GET.get("key", "")
+    nonce_data = sess.nonce(request.session).pop(key)
+    if not nonce_data:
+        return HttpResponse("Session expired. Please try again.", status=400)
+
+    if resp := APPLY_COST.guard(request.user, no_credits_response):
+        return resp
+
+    compare_store = sess.compare(request.session)
+    if not compare_store.is_initialized:
+        return HttpResponse("Compare session expired. Please re-upload your resume.", status=400)
+
+    jd_id = nonce_data["jd_id"]
+    mode = nonce_data["mode"]
+    resume_text = nonce_data["resume_text"]
+    jd_text = nonce_data["jd_text"]
+
+    service = get_compare_service()
+    source = (
+        service.stream_cover_letter(resume_text, jd_text)
+        if mode == "cover_letter"
+        else service.stream_interests(resume_text, jd_text)
+    )
+
+    def finalizer(accumulated: str | None) -> Generator[SSEEvent, None, None]:
+        if accumulated is None:
+            return
+        compare_store.set_jd_apply_cache(jd_id, mode, accumulated)
+        rendered = md.markdown(accumulated, extensions=["tables"])
+        copy_btn = (
+            '<button class="apply-copy-btn" '
+            'onclick="var t=this.closest(\'.apply-result\').querySelector(\'.apply-result-body\');'
+            'navigator.clipboard.writeText(t.innerText)">Copy</button>'
+        )
+        regen_btn = (
+            f'<button class="apply-regen-btn" '
+            f'hx-post="/compare/apply-start/" '
+            f'hx-vals=\'{{"jd_id": "{jd_id}", "mode": "{mode}", "regenerate": "1"}}\' '
+            f'hx-include="[name=csrfmiddlewaretoken]" '
+            f'hx-target="#apply-modal-content" '
+            f'hx-swap="innerHTML">Regenerate</button>'
+        )
+        wrap_html = (
+            f'<div class="apply-result">'
+            f'  <div class="apply-result-body analysis-result">{rendered}</div>'
+            f'  <div class="apply-result-actions">{copy_btn}{regen_btn}</div>'
+            f'</div>'
+        )
+        yield SSEEvent("wrap", wrap_html)
+
+    return SseStream(source=source, finalizer=finalizer).response()

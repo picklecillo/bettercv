@@ -10,4 +10,6 @@ urlpatterns = [
     path("remove-jd/", views.remove_jd, name="compare-remove-jd"),
     path("reset/", views.reset, name="compare-reset"),
     path("reanalyze/<str:jd_id>/", views.reanalyze, name="compare-reanalyze"),
+    path("apply-start/", views.apply_start, name="compare-apply-start"),
+    path("apply-stream/", views.apply_stream, name="compare-apply-stream"),
 ]
