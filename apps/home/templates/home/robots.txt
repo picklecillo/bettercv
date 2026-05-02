@@ -28,4 +28,4 @@ Disallow: /accounts/
 Disallow: /admin/
 Disallow: /resume/
 
-Sitemap: https://bettercv.xyz/sitemap.xml
+Sitemap: https://cvora.xyz/sitemap.xml
