@@ -2,7 +2,7 @@
 
 ## Context
 
-BetterCV is currently stateless — no user accounts, all state in Django sessions. This plan adds real user accounts with email/password + magic link authentication, and a credit system where users purchase credits (via Lemon Squeezy) consumed each time they trigger a Claude API call.
+CVora is currently stateless — no user accounts, all state in Django sessions. This plan adds real user accounts with email/password + magic link authentication, and a credit system where users purchase credits (via Lemon Squeezy) consumed each time they trigger a Claude API call.
 
 ---
 

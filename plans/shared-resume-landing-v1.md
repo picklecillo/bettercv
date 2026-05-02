@@ -16,7 +16,7 @@ Replace the root `/` landing page with a resume intake page. Once the user submi
 
 ## User Stories
 
-1. As a new user, I want to land on a page that introduces the three tools, so that I understand what BetterCV offers before committing to one.
+1. As a new user, I want to land on a page that introduces the three tools, so that I understand what CVora offers before committing to one.
 2. As a new user, I want to paste or upload my resume once, so that I don't have to re-enter it for each tool.
 3. As a user, I want clear feedback that my resume was accepted, so that I feel confident before choosing a tool.
 4. As a user, I want to see three tool cards after submitting my resume, so that I can choose which tool to use next.

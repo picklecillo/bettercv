@@ -51,7 +51,7 @@ class LandingPageTests(TestCase):
 
     def test_landing_contains_product_description(self):
         response = self.client.get("/")
-        self.assertContains(response, "BetterCV")
+        self.assertContains(response, "CVora")
 
     def test_landing_has_cta_link_to_home(self):
         response = self.client.get("/")

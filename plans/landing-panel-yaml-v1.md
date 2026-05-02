@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-BetterCV has no marketing entry point — arriving at `/` drops the user directly into a resume upload form with no context about what the product does or what tools are available. Each tool also maintains its own isolated resume upload section, forcing users to re-upload their resume every time they switch tools. There is no unified resume state visible across the app. Finally, the resume-to-YAML conversion is buried inside the dedicated Writer tool, even though a structured YAML representation of the user's resume is useful for the whole product.
+CVora has no marketing entry point — arriving at `/` drops the user directly into a resume upload form with no context about what the product does or what tools are available. Each tool also maintains its own isolated resume upload section, forcing users to re-upload their resume every time they switch tools. There is no unified resume state visible across the app. Finally, the resume-to-YAML conversion is buried inside the dedicated Writer tool, even though a structured YAML representation of the user's resume is useful for the whole product.
 
 ## Solution
 
@@ -10,7 +10,7 @@ Introduce a static marketing landing page at `/` that explains the product and d
 
 ## User Stories
 
-1. As a new visitor, I want to see a marketing landing page at `/` that describes BetterCV and its tools, so that I understand what the product does before I start.
+1. As a new visitor, I want to see a marketing landing page at `/` that describes CVora and its tools, so that I understand what the product does before I start.
 2. As a new visitor, I want a prominent call-to-action on the landing page that takes me to `/home`, so that I know where to begin.
 3. As a new visitor, I want each tool briefly described on the landing page, so that I can decide which one I want to use.
 4. As a user at `/home`, I want to see an upload form in the left panel, so that I can provide my resume to get started.

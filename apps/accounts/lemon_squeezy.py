@@ -12,7 +12,7 @@ def build_checkout_url(product_id: str, variant_id: str, user_id: int, user_emai
         'checkout[email]': user_email,
         # 'enabled': variant_id,
     })
-    return f"https://bettercv.lemonsqueezy.com/buy/{product_id}/?{params}"
+    return f"https://cvora.lemonsqueezy.com/buy/{product_id}/?{params}"
 
 
 def verify_webhook_signature(body: bytes, header_signature: str) -> bool:

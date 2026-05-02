@@ -152,7 +152,7 @@ class MagicLinkTests(TestCase):
         self.client.post('/accounts/magic-link/send/', {'email': 'magic@test.com'})
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('magic@test.com', mail.outbox[0].to)
-        self.assertIn('BetterCV', mail.outbox[0].subject)
+        self.assertIn('CVora', mail.outbox[0].subject)
 
     def test_send_known_email_shows_sent_partial(self):
         response = self.client.post('/accounts/magic-link/send/', {'email': 'magic@test.com'})

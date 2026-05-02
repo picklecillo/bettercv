@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BetterCV is a Django + HTMX web app with four tools: ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer. All use the Claude API with SSE streaming. Stateless — no user accounts, no saved history (DB-backed sessions via SQLite).
+CVora is a Django + HTMX web app with four tools: ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer. All use the Claude API with SSE streaming. Stateless — no user accounts, no saved history (DB-backed sessions via SQLite).
 
 ## Setup
 

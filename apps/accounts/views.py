@@ -112,9 +112,9 @@ def send_magic_link(request):
         f'/accounts/magic-link/login/?{urlencode(token_params)}'
     )
     user.email_user(
-        subject='Your BetterCV login link',
+        subject='Your CVora login link',
         message=(
-            f'Click the link below to sign in to BetterCV.\n\n'
+            f'Click the link below to sign in to CVora.\n\n'
             f'{login_url}\n\n'
             f'This link expires in 15 minutes and can only be used once.'
         ),

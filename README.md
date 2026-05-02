@@ -1,4 +1,4 @@
-# BetterCV — https://bettercv.fly.dev/
+# CVora — https://bettercv.fly.dev/
 
 AI-powered career toolkit built with Django, HTMX, and Claude. Upload your resume once and use four tools — ATS Analyzer, Resume Coach, Multi-JD Compare, and Resume Writer.
 
