@@ -39,7 +39,14 @@ def apply_experience_rewrite(yaml_str: str, company: str, position: str, rewrite
     ryaml.preserve_quotes = True
     data = ryaml.load(yaml_str)
 
-    experiences = (data or {}).get("cv", {}).get("sections", {}).get("experience", []) or []
+    sections = (data or {}).get("cv", {}).get("sections", {}) or {}
+    experiences = []
+    for section_entries in sections.values():
+        if not isinstance(section_entries, list):
+            continue
+        if any(isinstance(e, dict) and ("company" in e or "position" in e) for e in section_entries):
+            experiences = section_entries
+            break
 
     company_key = company.strip().lower()
     position_key = position.strip().lower()
