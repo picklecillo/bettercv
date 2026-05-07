@@ -24,6 +24,7 @@ Follow this structure precisely. Omit any section that has no data in the source
   location: San Francisco, CA
   email: jane@example.com
   website: https://janesmith.dev
+  phone: +1-234-567-8900 
   social_networks:
     - network: LinkedIn
       username: janesmith
