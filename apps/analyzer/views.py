@@ -4,6 +4,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.accounts.credits import CreditCost
+from apps.shared.i18n import get as ui
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
@@ -47,6 +48,7 @@ def analyze(request):
     if not jd_text:
         return _error("Please provide a job description.")
 
+    lang = request.session.get("lang", "en")
     key = sess.nonce(request.session).put({"resume_text": resume_text, "jd_text": jd_text})
 
     return HttpResponse(
@@ -57,7 +59,7 @@ def analyze(request):
         f'  <div id="stream-output"'
         f'       sse-swap="chunk"'
         f'       hx-swap="beforeend"></div>'
-        f'  <div class="stream-status">Analyzing<span class="dots">...</span></div>'
+        f'  <div class="stream-status">{ui(lang, "analyzer_analyzing")}<span class="dots">...</span></div>'
         f'  <div sse-swap="render"'
         f'       hx-target="#stream-output"'
         f'       hx-swap="innerHTML"></div>'
@@ -76,7 +78,8 @@ def stream(request):
     if resp := STREAM_COST.guard(request.user, no_credits_response):
         return resp
 
+    lang = request.session.get("lang", "en")
     return SseStream(
-        source=get_service().stream(data["resume_text"], data["jd_text"]),
+        source=get_service().stream(data["resume_text"], data["jd_text"], lang=lang),
         known_errors=(ClaudeServiceError,),
     ).response()

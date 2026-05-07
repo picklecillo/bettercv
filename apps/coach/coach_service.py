@@ -9,6 +9,14 @@ from apps.shared.claude import (
     translate_connection_error,
 )
 
+_LANG_INSTRUCTIONS = {
+    "es": "\n\nResponde íntegramente en español.",
+}
+
+
+def _with_lang(system_prompt: str, lang: str) -> str:
+    return system_prompt + _LANG_INSTRUCTIONS.get(lang, "")
+
 
 class CoachParseError(Exception):
     pass
@@ -122,12 +130,15 @@ class CoachService:
             for e in raw
         ]
 
-    def stream_reply(self, work_experience: WorkExperience, history: list[dict]) -> Iterator[str]:
-        system_prompt = _COACH_SYSTEM_PROMPT.format(
-            company=work_experience.company,
-            title=work_experience.title,
-            dates=work_experience.dates,
-            original_description=work_experience.original_description,
+    def stream_reply(self, work_experience: WorkExperience, history: list[dict], lang: str = "en") -> Iterator[str]:
+        system_prompt = _with_lang(
+            _COACH_SYSTEM_PROMPT.format(
+                company=work_experience.company,
+                title=work_experience.title,
+                dates=work_experience.dates,
+                original_description=work_experience.original_description,
+            ),
+            lang,
         )
         try:
             with self._client.messages.stream(

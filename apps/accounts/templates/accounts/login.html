@@ -3,7 +3,7 @@
 {% block title_suffix %} — Sign In{% endblock %}
 
 {% block header_nav %}
-  <a href="/accounts/register/" class="nav-link">Register</a>
+  <a href="/accounts/register/" class="nav-link">{{ ui.accounts_register_link }}</a>
 {% endblock %}
 
 {% block extra_head %}
@@ -35,8 +35,8 @@
 {% block content %}
   <div class="auth-wrap">
     <div class="auth-card">
-      <h1 class="auth-title">Sign in</h1>
-      <p class="auth-subtitle">Welcome back</p>
+      <h1 class="auth-title">{{ ui.accounts_sign_in_title }}</h1>
+      <p class="auth-subtitle">{{ ui.accounts_welcome_back }}</p>
 
       {% if error %}
         <div class="auth-error">{{ error }}</div>
@@ -45,17 +45,17 @@
       <form method="POST" action="/accounts/login/{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
         {% csrf_token %}
         <div class="form-group">
-          <label class="form-label" for="id_email">Email</label>
+          <label class="form-label" for="id_email">{{ ui.accounts_email }}</label>
           <input class="form-input" type="email" name="email" id="id_email"
                  value="{{ form.email.value|default:'' }}"
                  placeholder="you@example.com" autocomplete="email">
         </div>
         <div class="form-group">
-          <label class="form-label" for="id_password">Password</label>
+          <label class="form-label" for="id_password">{{ ui.accounts_password }}</label>
           <input class="form-input" type="password" name="password" id="id_password"
                  placeholder="Password" autocomplete="current-password">
         </div>
-        <button type="submit" class="submit-btn">Sign in</button>
+        <button type="submit" class="submit-btn">{{ ui.accounts_sign_in_btn }}</button>
       </form>
 
       <div class="divider">or</div>
@@ -67,16 +67,16 @@
               hx-include="[name=csrfmiddlewaretoken]">
           {% csrf_token %}
           <div class="form-group">
-            <label class="form-label" for="id_magic_email">Magic link — enter your email</label>
+            <label class="form-label" for="id_magic_email">{{ ui.accounts_magic_link_label }}</label>
             <input class="form-input" type="email" name="email" id="id_magic_email"
                    placeholder="you@example.com" autocomplete="email">
           </div>
-          <button type="submit" class="ghost-btn">Send magic link</button>
+          <button type="submit" class="ghost-btn">{{ ui.accounts_send_magic_link }}</button>
         </form>
       </div>
 
       <div class="auth-footer">
-        No account? <a href="/accounts/register/">Create one free</a>
+        {{ ui.accounts_no_account }} <a href="/accounts/register/">{{ ui.accounts_create_free }}</a>
       </div>
     </div>
   </div>

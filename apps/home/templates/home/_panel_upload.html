@@ -1,11 +1,11 @@
 {% if shared_resume and not show_replace_form %}
 <div id="loaded-badge" class="loaded-badge">
-  <span class="loaded-badge-label">Loaded</span>
+  <span class="loaded-badge-label">{{ ui.panel_loaded }}</span>
   <span>{{ shared_resume.resume_filename|default:"Resume" }}</span>
   <span style="flex:1"></span>
   <a href="#" class="change-link"
      onclick="document.getElementById('loaded-badge').style.display='none'; document.getElementById('replace-form').style.display='block'; return false;">
-    Replace
+    {{ ui.panel_replace }}
   </a>
 </div>
 <div id="replace-form" style="display:none">
@@ -19,7 +19,7 @@
       hx-encoding="multipart/form-data"
       hx-indicator="#panel-loading"
       hx-disabled-elt="#panel-submit-btn"
-      {% if shared_resume %}hx-confirm="Uploading a new resume will replace the current one. Any active tool sessions may be affected. Continue?"{% endif %}
+      {% if shared_resume %}hx-confirm="{{ ui.panel_replace_confirm }}"{% endif %}
       onsubmit="
         var hasText = this.querySelector('[name=resume_text]').value.trim();
         var hasFile = this.querySelector('[name=resume_pdf]').files.length > 0;
@@ -30,28 +30,28 @@
   {% csrf_token %}
   <input type="hidden" name="source" value="panel">
 
-  <span class="card-label">Paste your resume</span>
+  <span class="card-label">{{ ui.panel_paste_resume }}</span>
   <textarea
     name="resume_text"
     class="styled-textarea"
     rows="12"
-    placeholder="Paste the full text of your resume here…">{{ shared_resume.resume_text|default:'' }}</textarea>
+    placeholder="{{ ui.panel_paste_placeholder }}">{{ shared_resume.resume_text|default:'' }}</textarea>
 
-  <div class="divider-label">or upload PDF</div>
+  <div class="divider-label">{{ ui.panel_or_upload_pdf }}</div>
 
   <input type="file" name="resume_pdf" accept=".pdf" class="styled-file"
          onchange="document.getElementById('panel-upload-error').style.display='none';">
 
   <div id="panel-upload-error" class="result-error" style="display:{% if error_message %}block{% else %}none{% endif %}">
-    {{ error_message|default:"Please paste your resume or upload a PDF." }}
+    {{ error_message|default:ui.panel_error_required }}
   </div>
 
   <div style="display:flex; justify-content:flex-end; align-items:center; gap:1rem; margin-top:1.25rem;">
     <span id="panel-loading" class="htmx-indicator" style="font-size:0.78rem; color:var(--ink-mid);">
-      Generating preview<span class="dots">…</span>
+      {{ ui.panel_generating_preview }}<span class="dots">…</span>
     </span>
     <button id="panel-submit-btn" type="submit" class="action-btn">
-      {% if shared_resume %}Replace resume{% else %}Load resume{% endif %}
+      {% if shared_resume %}{{ ui.panel_replace_resume }}{% else %}{{ ui.panel_load_resume }}{% endif %}
     </button>
   </div>
 

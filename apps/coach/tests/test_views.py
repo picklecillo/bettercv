@@ -152,7 +152,7 @@ class CoachStreamTests(AuthenticatedMixin, TestCase):
         received_history = []
         original_stream_reply = fake.stream_reply
 
-        def capturing_stream_reply(work_experience, history):
+        def capturing_stream_reply(work_experience, history, lang="en"):
             received_history.extend(history)
             yield from original_stream_reply(work_experience, history)
 

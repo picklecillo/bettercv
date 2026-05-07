@@ -59,10 +59,11 @@ def stream(request):
         return resp
 
     resume_text = nonce_data["resume_text"]
+    lang = request.session.get("lang", "en")
 
     def event_stream():
         try:
-            for chunk in get_writer_service().stream_yaml(resume_text):
+            for chunk in get_writer_service().stream_yaml(resume_text, lang=lang):
                 lines = "\n".join(f"data: {line}" for line in chunk.split("\n"))
                 yield f"event: chunk\n{lines}\n\n"
         except Exception as e:

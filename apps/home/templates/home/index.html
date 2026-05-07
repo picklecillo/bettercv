@@ -89,8 +89,8 @@
 {% block content %}
 <div class="home-content">
   <div class="home-intro">
-    <h2>Where would you like to start?</h2>
-    <p>Upload your resume in the panel on the left, then choose a tool.</p>
+    <h2>{{ ui.home_heading }}</h2>
+    <p>{{ ui.home_subheading }}</p>
   </div>
 
   <div class="tool-cards">
@@ -103,10 +103,10 @@
         </svg>
       </div>
       <div class="tool-card-body">
-        <h3>ATS Analyzer</h3>
-        <p>Score your resume against a job description and get keyword feedback.</p>
+        <h3>{{ ui.home_ats_name }}</h3>
+        <p>{{ ui.home_ats_desc }}</p>
       </div>
-      <span class="tool-card-cta">Analyze →</span>
+      <span class="tool-card-cta">{{ ui.home_ats_cta }}</span>
     </a>
 
     <a href="/coach/" class="tool-card">
@@ -117,10 +117,10 @@
         </svg>
       </div>
       <div class="tool-card-body">
-        <h3>Resume Coach</h3>
-        <p>Work through each job with an AI coach and get stronger rewrites.</p>
+        <h3>{{ ui.home_coach_name }}</h3>
+        <p>{{ ui.home_coach_desc }}</p>
       </div>
-      <span class="tool-card-cta">Start coaching →</span>
+      <span class="tool-card-cta">{{ ui.home_coach_cta }}</span>
     </a>
 
     <a href="/compare/" class="tool-card">
@@ -131,10 +131,10 @@
         </svg>
       </div>
       <div class="tool-card-body">
-        <h3>Multi-JD Compare</h3>
-        <p>Add multiple job descriptions and see a scored comparison at a glance.</p>
+        <h3>{{ ui.home_compare_name }}</h3>
+        <p>{{ ui.home_compare_desc }}</p>
       </div>
-      <span class="tool-card-cta">Compare roles →</span>
+      <span class="tool-card-cta">{{ ui.home_compare_cta }}</span>
     </a>
 
   </div>

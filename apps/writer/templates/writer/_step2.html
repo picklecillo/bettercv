@@ -41,23 +41,23 @@
     <div id="yaml-accent-bar" class="yaml-accent-bar streaming"></div>
 
     <div id="stream-status-{{ nonce }}" class="stream-status">
-      Converting resume<span class="dots">...</span>
+      {{ ui.writer_converting }}<span class="dots">...</span>
     </div>
 
     <div class="split-pane">
       <div style="display:flex; flex-direction:column;">
-        <div class="pane-label">YAML</div>
+        <div class="pane-label">{{ ui.writer_yaml_label }}</div>
         <textarea
           id="yaml-output"
           name="yaml_content"
           class="yaml-textarea"
-          placeholder="Generated YAML will appear here…"
+          placeholder="{{ ui.writer_yaml_placeholder }}"
           spellcheck="false"></textarea>
       </div>
       <div style="display:flex; flex-direction:column;">
-        <div class="pane-label">Preview</div>
+        <div class="pane-label">{{ ui.writer_preview_label }}</div>
         <div style="flex:1; position:relative; min-height:0;">
-          <div id="preview-placeholder" class="preview-placeholder" style="height:100%;">Preview will appear after conversion</div>
+          <div id="preview-placeholder" class="preview-placeholder" style="height:100%;">{{ ui.writer_preview_placeholder }}</div>
           <iframe id="preview-iframe" class="preview-iframe" style="display:none; position:absolute; inset:0;" sandbox="allow-same-origin"></iframe>
         </div>
       </div>
@@ -71,9 +71,9 @@
     <div id="build-error"></div>
 
     <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-      <button id="build-btn" class="action-btn" disabled>Download PDF</button>
-      <button id="refresh-btn" class="secondary-btn" disabled>Refresh Preview</button>
-      <button id="yaml-download-btn" class="secondary-btn" disabled>Download YAML</button>
+      <button id="build-btn" class="action-btn" disabled>{{ ui.writer_download_pdf }}</button>
+      <button id="refresh-btn" class="secondary-btn" disabled>{{ ui.writer_refresh_preview }}</button>
+      <button id="yaml-download-btn" class="secondary-btn" disabled>{{ ui.writer_download_yaml }}</button>
     </div>
   </div>
 
@@ -106,7 +106,7 @@
   errorProxy.addEventListener('htmx:sseBeforeMessage', function (e) {
     e.preventDefault();
     hadStreamError = true;
-    errorDiv.innerHTML = '<div class="result-error">Conversion error: ' + e.detail.data + '</div>';
+    errorDiv.innerHTML = '<div class="result-error">{{ ui.writer_conversion_error }} ' + e.detail.data + '</div>';
   });
 
   // htmx:sseClose fires on the sse-connect element when the stream ends (sse-close="done").
@@ -143,11 +143,11 @@
         iframe.style.display = 'block';
         iframe.srcdoc = data.html;
       } else {
-        errorDiv.innerHTML = '<div class="result-error">Preview error: ' + (data.error || 'Unknown error') + '</div>';
+        errorDiv.innerHTML = '<div class="result-error">{{ ui.writer_preview_error }} ' + (data.error || 'Unknown error') + '</div>';
       }
     })
     .catch(function (err) {
-      errorDiv.innerHTML = '<div class="result-error">Preview error: ' + err.message + '</div>';
+      errorDiv.innerHTML = '<div class="result-error">{{ ui.writer_preview_error }} ' + err.message + '</div>';
     })
     .finally(function () {
       refreshBtn.classList.remove('loading');
@@ -199,7 +199,7 @@
       });
     })
     .catch(function (err) {
-      errorDiv.innerHTML = '<div class="result-error">Network error: ' + err.message + '</div>';
+      errorDiv.innerHTML = '<div class="result-error">{{ ui.writer_network_error }} ' + err.message + '</div>';
     })
     .finally(function () {
       buildBtn.disabled = false;

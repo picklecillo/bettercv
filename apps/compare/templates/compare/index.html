@@ -1,7 +1,7 @@
 {% extends "home/base.html" %}
 
 {% block title_suffix %} — Compare JDs{% endblock %}
-{% block tab_label %}Compare{% endblock %}
+{% block tab_label %}{{ ui.tab_compare }}{% endblock %}
 
 {% block tool_head %}
 <style type="text/tailwindcss">
@@ -52,8 +52,8 @@
 {% else %}
 <div class="tool-scroll">
   <div class="compare-intro">
-    <h2>Compare Job Descriptions</h2>
-    <p>Add up to 10 job descriptions and see a scored comparison table at a glance. Instantly identify which roles are the best fit.</p>
+    <h2>{{ ui.compare_title }}</h2>
+    <p>{{ ui.compare_subtitle }}</p>
 
     {% if shared_resume %}
       <form hx-post="/compare/parse-resume/"
@@ -65,12 +65,12 @@
         {% csrf_token %}
         <input type="hidden" name="resume_text" value="{{ shared_resume.resume_text }}">
         <button id="compare-btn" type="submit" class="action-btn">
-          Start Comparing
+          {{ ui.compare_start_btn }}
         </button>
       </form>
     {% else %}
       <div class="no-resume-notice">
-        Upload your resume in the left panel to get started.
+        {{ ui.no_resume_notice_short }}
       </div>
     {% endif %}
   </div>

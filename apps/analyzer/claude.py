@@ -15,6 +15,15 @@ __all__ = ["ClaudeService", "ClaudeServiceError", "get_service"]
 # Backward-compat alias used in tests
 _MODEL = MODEL
 
+_LANG_INSTRUCTIONS = {
+    "es": "\n\nResponde íntegramente en español.",
+}
+
+
+def _with_lang(system_prompt: str, lang: str) -> str:
+    return system_prompt + _LANG_INSTRUCTIONS.get(lang, "")
+
+
 ATS_SYSTEM_PROMPT = """You are an expert ATS (Applicant Tracking System) analyst and resume coach.
 Your job is to analyze how well a resume matches a job description and provide
 a detailed, structured analysis in markdown format.
@@ -53,12 +62,12 @@ class ClaudeService:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self._client = client
 
-    def analyze(self, resume_text: str, jd_text: str) -> str:
+    def analyze(self, resume_text: str, jd_text: str, lang: str = "en") -> str:
         try:
             message = self._client.messages.create(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=ATS_SYSTEM_PROMPT,
+                system=_with_lang(ATS_SYSTEM_PROMPT, lang),
                 messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,
@@ -70,12 +79,12 @@ class ClaudeService:
             raise translate_connection_error(e) from e
         return message.content[0].text
 
-    def stream(self, resume_text: str, jd_text: str) -> Iterator[str]:
+    def stream(self, resume_text: str, jd_text: str, lang: str = "en") -> Iterator[str]:
         try:
             with self._client.messages.stream(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=ATS_SYSTEM_PROMPT,
+                system=_with_lang(ATS_SYSTEM_PROMPT, lang),
                 messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,

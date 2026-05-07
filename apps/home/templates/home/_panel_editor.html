@@ -37,12 +37,12 @@
       <input type="hidden" name="yaml_content" id="yaml-for-preview">
       <button id="preview-btn" type="submit" class="action-btn"
               onclick="document.getElementById('yaml-for-preview').value = document.getElementById('yaml-editor').value">
-        Preview
+        {{ ui.panel_preview_btn }}
       </button>
     </form>
 
     <span id="preview-loading" class="htmx-indicator" style="font-size:0.78rem; color:var(--ink-mid);">
-      Rendering<span class="dots">…</span>
+      {{ ui.panel_rendering }}<span class="dots">…</span>
     </span>
 
     <span style="flex:1"></span>
@@ -58,7 +58,7 @@
       </button>
       <button type="submit" class="ghost-btn"
               onclick="document.getElementById('yaml-for-pdf').value = document.getElementById('yaml-editor').value">
-        Download PDF
+        {{ ui.panel_download_pdf }}
       </button>
     </form>
 
@@ -67,8 +67,8 @@
 </div>
 
 <dialog id="design-settings-dialog" class="design-settings-dialog">
-  <p class="design-settings-title">Design Settings</p>
-  <label class="design-settings-label" for="theme-select">RenderCV Theme</label>
+  <p class="design-settings-title">{{ ui.panel_design_settings }}</p>
+  <label class="design-settings-label" for="theme-select">{{ ui.panel_rendercv_theme }}</label>
   <select id="theme-select" class="design-settings-select">
     <option value="classic">classic</option>
     <option value="ember">ember</option>
@@ -82,7 +82,7 @@
   </select>
   <label class="design-settings-checkbox-row">
     <input type="checkbox" id="show-top-note-check">
-    <span class="design-settings-checkbox-label">Show top note</span>
+    <span class="design-settings-checkbox-label">{{ ui.panel_show_top_note }}</span>
   </label>
 </dialog>
 

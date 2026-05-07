@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterator
 
 import anthropic
@@ -93,24 +94,87 @@ design:
 
 _PREFILL = "cv:"
 
+SECTION_NAMES = {
+    "en": {
+        "summary": "summary",
+        "experience": "experience",
+        "education": "education",
+        "projects": "projects",
+        "skills": "skills",
+        "awards": "awards",
+    },
+    "es": {
+        "summary": "Resumen",
+        "experience": "Experiencia",
+        "education": "Educación",
+        "projects": "Proyectos",
+        "skills": "Habilidades",
+        "awards": "Premios",
+    },
+}
+
+
+def _build_system_prompt(lang: str) -> str:
+    names = SECTION_NAMES.get(lang, SECTION_NAMES["en"])
+    prompt = _SYSTEM_PROMPT
+    for en_key in SECTION_NAMES["es"]:
+        # Only replace the section key (exactly 4 leading spaces, anchored to line start)
+        prompt = re.sub(
+            rf"^(    ){re.escape(en_key)}:",
+            rf"\g<1>{names[en_key]}:",
+            prompt,
+            flags=re.MULTILINE,
+        )
+    if lang == "es":
+        prompt += (
+            "\n\nThe section keys in the example above are already in Spanish. "
+            "Always use those exact Spanish section keys. Never use the English equivalents "
+            "(summary, experience, education, projects, skills, awards)."
+        )
+    return prompt
+
+
+def _localize_stream(source: Iterator[str], lang: str) -> Iterator[str]:
+    """Buffer by line; replace section keys as they stream out."""
+    if lang not in SECTION_NAMES or lang == "en":
+        yield from source
+        return
+    names = SECTION_NAMES[lang]
+    # keys that are section names (without the colon)
+    en_keys = set(names.keys())
+    buf = ""
+    for chunk in source:
+        buf += chunk
+        while "\n" in buf:
+            line, buf = buf.split("\n", 1)
+            stripped = line.strip()
+            # A section key line looks like "    summary:" — stripped is exactly "key:"
+            if stripped.endswith(":") and stripped[:-1] in en_keys:
+                indent = len(line) - len(line.lstrip())
+                line = " " * indent + names[stripped[:-1]] + ":"
+            yield line + "\n"
+    if buf:
+        yield buf
+
 
 class WriterService:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self._client = client
 
-    def stream_yaml(self, resume_text: str) -> Iterator[str]:
+    def stream_yaml(self, resume_text: str, lang: str = "en") -> Iterator[str]:
+        system = _build_system_prompt(lang)
         yield _PREFILL
         try:
             with self._client.messages.stream(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=_SYSTEM_PROMPT,
+                system=system,
                 messages=[
                     {"role": "user", "content": resume_text},
                     {"role": "assistant", "content": _PREFILL},
                 ],
             ) as s:
-                yield from s.text_stream
+                yield from _localize_stream(s.text_stream, lang)
         except anthropic.APIStatusError as e:
             raise translate_api_error(e) from e
         except anthropic.APIConnectionError as e:

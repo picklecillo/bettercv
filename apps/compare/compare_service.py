@@ -2,7 +2,7 @@ import anthropic
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from apps.analyzer.claude import ATS_SYSTEM_PROMPT, ATS_USER_PROMPT
+from apps.analyzer.claude import ATS_SYSTEM_PROMPT, ATS_USER_PROMPT, _with_lang
 from apps.shared.claude import (
     MODEL,
     make_client,
@@ -69,12 +69,12 @@ class CompareService:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self._client = client
 
-    def stream_analysis(self, resume_text: str, jd_text: str) -> Iterator[str]:
+    def stream_analysis(self, resume_text: str, jd_text: str, lang: str = "en") -> Iterator[str]:
         try:
             with self._client.messages.stream(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=ATS_SYSTEM_PROMPT,
+                system=_with_lang(ATS_SYSTEM_PROMPT, lang),
                 messages=[{"role": "user", "content": ATS_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,
@@ -86,12 +86,12 @@ class CompareService:
         except anthropic.APIConnectionError as e:
             raise translate_connection_error(e) from e
 
-    def stream_cover_letter(self, resume_text: str, jd_text: str) -> Iterator[str]:
+    def stream_cover_letter(self, resume_text: str, jd_text: str, lang: str = "en") -> Iterator[str]:
         try:
             with self._client.messages.stream(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=_COVER_LETTER_SYSTEM,
+                system=_with_lang(_COVER_LETTER_SYSTEM, lang),
                 messages=[{"role": "user", "content": _APPLY_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,
@@ -103,12 +103,12 @@ class CompareService:
         except anthropic.APIConnectionError as e:
             raise translate_connection_error(e) from e
 
-    def stream_interests(self, resume_text: str, jd_text: str) -> Iterator[str]:
+    def stream_interests(self, resume_text: str, jd_text: str, lang: str = "en") -> Iterator[str]:
         try:
             with self._client.messages.stream(
                 model=MODEL,
                 max_tokens=_MAX_TOKENS,
-                system=_INTERESTS_SYSTEM,
+                system=_with_lang(_INTERESTS_SYSTEM, lang),
                 messages=[{"role": "user", "content": _APPLY_USER_PROMPT.format(
                     resume_text=resume_text,
                     jd_text=jd_text,

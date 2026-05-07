@@ -88,8 +88,9 @@ def submit_resume(request):
 
     if source == "panel":
         # Generate YAML and render HTML preview synchronously.
+        lang = request.session.get("lang", "en")
         try:
-            yaml_content = "".join(get_writer_service().stream_yaml(resume_text))
+            yaml_content = "".join(get_writer_service().stream_yaml(resume_text, lang=lang))
             html_content = get_builder().render_html(
                 yaml_content, request.session.session_key or "panel"
             )

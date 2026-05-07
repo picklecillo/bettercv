@@ -10,9 +10,9 @@ class FakeClaudeService(ClaudeService):
         self._response = response
         self.analyze_calls: list[dict] = []
 
-    def analyze(self, resume_text: str, jd_text: str) -> str:
+    def analyze(self, resume_text: str, jd_text: str, lang: str = "en") -> str:
         self.analyze_calls.append({"resume_text": resume_text, "jd_text": jd_text})
         return self._response
 
-    def stream(self, resume_text: str, jd_text: str) -> Iterator[str]:
+    def stream(self, resume_text: str, jd_text: str, lang: str = "en") -> Iterator[str]:
         yield self._response

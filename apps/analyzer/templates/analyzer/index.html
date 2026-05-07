@@ -1,7 +1,7 @@
 {% extends "home/base.html" %}
 
 {% block title_suffix %} — ATS Analyzer{% endblock %}
-{% block tab_label %}Analysis{% endblock %}
+{% block tab_label %}{{ ui.tab_analysis }}{% endblock %}
 
 {% block tool_head %}
 <style type="text/tailwindcss">
@@ -191,7 +191,7 @@
 
     {% if not shared_resume %}
     <div class="no-resume-notice">
-      No resume loaded. Upload your resume in the left panel to get started.
+      {{ ui.no_resume_notice }}
     </div>
     {% endif %}
 
@@ -206,24 +206,24 @@
 
       <div class="main-grid">
         <div class="input-card">
-          <span class="card-label-tool">Job Description</span>
+          <span class="card-label-tool">{{ ui.analyzer_jd_label }}</span>
           <textarea
             id="jd_text"
             name="jd_text"
             class="styled-textarea-tool"
             rows="18"
-            placeholder="Paste the full job description here…"></textarea>
+            placeholder="{{ ui.analyzer_jd_placeholder }}"></textarea>
         </div>
 
         <div class="input-card" style="display:flex; flex-direction:column; justify-content:flex-end; gap:0.75rem; min-height:200px;">
           <div>
             <p style="font-size:0.875rem; color:var(--ink-mid); line-height:1.7; margin:0 0 1rem;">
-              Paste a job description and the AI will score your resume against it — identifying matched keywords, gaps, and quick wins.
+              {{ ui.analyzer_helper_text }}
             </p>
           </div>
           <div style="display:flex; justify-content:flex-end;">
             <button id="submit-btn" type="submit" class="analyze-btn">
-              Analyze Resume
+              {{ ui.analyzer_btn }}
             </button>
           </div>
         </div>
@@ -239,7 +239,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z" />
           </svg>
-          <p>Analysis will appear here</p>
+          <p>{{ ui.analyzer_placeholder }}</p>
         </div>
       </div>
     </div>

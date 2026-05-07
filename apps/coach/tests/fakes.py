@@ -33,5 +33,5 @@ class FakeCoachService(CoachService):
             raise self._should_raise
         return self._experiences
 
-    def stream_reply(self, work_experience: WorkExperience, history: list[dict]) -> Iterator[str]:
+    def stream_reply(self, work_experience: WorkExperience, history: list[dict], lang: str = "en") -> Iterator[str]:
         yield "What were your key achievements in this role?"

@@ -1,7 +1,7 @@
 {% extends "home/base.html" %}
 
 {% block title_suffix %} — Resume Coach{% endblock %}
-{% block tab_label %}Coaching{% endblock %}
+{% block tab_label %}{{ ui.tab_coaching }}{% endblock %}
 
 {% block tool_head %}
 <style type="text/tailwindcss">
@@ -52,8 +52,8 @@
 {% else %}
 <div class="tool-scroll">
   <div class="coach-intro">
-    <h2>Resume Coach</h2>
-    <p>Get a guided conversation that transforms your job descriptions into compelling, achievement-focused bullet points — one role at a time.</p>
+    <h2>{{ ui.coach_title }}</h2>
+    <p>{{ ui.coach_subtitle }}</p>
 
     {% if shared_resume %}
       <form hx-post="/coach/parse/"
@@ -65,12 +65,12 @@
         {% csrf_token %}
         <input type="hidden" name="cv_text" value="{{ shared_resume.resume_text }}">
         <button id="coach-btn" type="submit" class="action-btn">
-          Start Coaching
+          {{ ui.coach_start_btn }}
         </button>
       </form>
     {% else %}
       <div class="no-resume-notice">
-        Upload your resume in the left panel to get started.
+        {{ ui.no_resume_notice_short }}
       </div>
     {% endif %}
   </div>

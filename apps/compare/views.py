@@ -8,6 +8,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST
 
 from apps.accounts.credits import CreditCost
+from apps.shared.i18n import get as ui
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
@@ -136,6 +137,7 @@ def add_jd(request):
     jd_id = str(uuid.uuid4())
     compare_store.add_jd(jd_id, jd_text)
     jd_num = compare_store.jd_count()
+    lang = request.session.get("lang", "en")
 
     nonce_key = sess.nonce(request.session).put({
         "jd_id": jd_id,
@@ -153,7 +155,7 @@ def add_jd(request):
         f'  <td>{jd_num}</td>'
         f'  <td>—</td>'
         f'  <td>—</td>'
-        f'  <td><span class="status-analyzing">Analyzing…</span></td>'
+        f'  <td><span class="status-analyzing">{ui(lang, "compare_analyzing")}…</span></td>'
         f'  <td></td>'
         f'</tr>'
     )
@@ -173,10 +175,10 @@ def add_jd(request):
         f'       sse-close="done">'
         f'    <div class="card-top-bar streaming"></div>'
         f'    <div class="card-header">'
-        f'      <span class="card-title">Job {jd_num}</span>'
+        f'      <span class="card-title">{ui(lang, "compare_job_label")} {jd_num}</span>'
         f'    </div>'
         f'    <div id="sse-wrap-{jd_id}">'
-        f'      <div class="stream-status">Analyzing<span class="dots">...</span></div>'
+        f'      <div class="stream-status">{ui(lang, "compare_analyzing")}<span class="dots">...</span></div>'
         f'      <div id="stream-out-{jd_id}" sse-swap="chunk" hx-swap="beforeend" class="stream-output"></div>'
         f'      <div sse-swap="wrap" hx-target="#sse-wrap-{jd_id}" hx-swap="outerHTML"></div>'
         f'      <div sse-swap="metadata" hx-target="#summary-row-{jd_id}" hx-swap="outerHTML"></div>'
@@ -253,6 +255,7 @@ def stream(request):
 
         # metadata MUST be yielded before wrap — wrap removes the sse-swap listeners
         # that receive metadata. Ordering is structurally enforced by yield order.
+        lang = request.session.get("lang", "en")
         remove_btn = (
             f'<button class="remove-btn" '
             f'hx-post="/compare/remove-jd/" '
@@ -260,8 +263,8 @@ def stream(request):
             f'hx-include="[name=csrfmiddlewaretoken]" '
             f'hx-target="#summary-row-{jd_id}" '
             f'hx-swap="delete" '
-            f'hx-confirm="Remove this analysis?">'
-            f'Remove</button>'
+            f'hx-confirm="{ui(lang, "compare_remove_confirm")}">'
+            f'{ui(lang, "compare_remove")}</button>'
         )
         help_btn = (
             f'<button class="help-btn" '
@@ -271,7 +274,7 @@ def stream(request):
             f'hx-target="#apply-modal-content" '
             f'hx-swap="innerHTML" '
             f'hx-on::after-request="document.getElementById(\'apply-modal\').showModal()">'
-            f'Help me apply</button>'
+            f'{ui(lang, "compare_help_apply")}</button>'
         )
         row_html = (
             f'<tr id="summary-row-{jd_id}" data-score-high="{score_high_val}">'
@@ -281,7 +284,7 @@ def stream(request):
             f'<span class="score-badge">{escape(score)}</span>'
             f'<span class="best-star" aria-label="Best score">★</span>'
             f'</td>'
-            f'<td>Done</td>'
+            f'<td>{ui(lang, "compare_done")}</td>'
             f'<td>{help_btn} {remove_btn}</td>'
             f'</tr>'
         )
@@ -290,8 +293,9 @@ def stream(request):
         rendered = md.markdown(accumulated, extensions=["tables"])
         yield SSEEvent("wrap", f'<div class="analysis-result">{rendered}</div>')
 
+    lang = request.session.get("lang", "en")
     return SseStream(
-        source=get_compare_service().stream_analysis(resume_text, jd_text),
+        source=get_compare_service().stream_analysis(resume_text, jd_text, lang=lang),
         finalizer=finalizer,
     ).response()
 
@@ -463,11 +467,12 @@ def apply_stream(request):
     resume_text = nonce_data["resume_text"]
     jd_text = nonce_data["jd_text"]
 
+    lang = request.session.get("lang", "en")
     service = get_compare_service()
     source = (
-        service.stream_cover_letter(resume_text, jd_text)
+        service.stream_cover_letter(resume_text, jd_text, lang=lang)
         if mode == "cover_letter"
-        else service.stream_interests(resume_text, jd_text)
+        else service.stream_interests(resume_text, jd_text, lang=lang)
     )
 
     def finalizer(accumulated: str | None) -> Generator[SSEEvent, None, None]:
@@ -486,7 +491,7 @@ def apply_stream(request):
             f'hx-vals=\'{{"jd_id": "{jd_id}", "mode": "{mode}", "regenerate": "1"}}\' '
             f'hx-include="[name=csrfmiddlewaretoken]" '
             f'hx-target="#apply-modal-content" '
-            f'hx-swap="innerHTML">Regenerate</button>'
+            f'hx-swap="innerHTML">{ui(lang, "compare_regenerate")}</button>'
         )
         wrap_html = (
             f'<div class="apply-result">'

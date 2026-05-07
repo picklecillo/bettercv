@@ -476,7 +476,7 @@
 
   {% if stale_resume %}
   <div id="stale-banner-area" style="flex-shrink:0;background:rgba(201,168,76,0.12);border-left:3px solid var(--gold,#c9a84c);padding:0.75rem 1.25rem;font-size:0.875rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-    <span><strong>Resume updated</strong> — your shared resume has changed since the last parse. Re-parse to apply it.</span>
+    <span>{{ ui.compare_stale_banner }}</span>
     <form hx-post="/compare/parse-resume/"
           hx-target="#main-content"
           hx-swap="innerHTML"
@@ -484,7 +484,7 @@
           style="margin:0">
       {% csrf_token %}
       <input type="hidden" name="resume_text" value="{{ shared_resume.resume_text|default:'' }}">
-      <button type="submit" style="font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;background:#1a1a2e;color:#f5f0e8;border:none;border-radius:3px;padding:0.45rem 1rem;cursor:pointer;">Re-parse</button>
+      <button type="submit" style="font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;background:#1a1a2e;color:#f5f0e8;border:none;border-radius:3px;padding:0.45rem 1rem;cursor:pointer;">{{ ui.compare_reparse }}</button>
     </form>
   </div>
   {% else %}
@@ -496,15 +496,15 @@
 
     <!-- Summary table -->
     <div class="summary-section">
-      <span class="section-label">Score Summary</span>
+      <span class="section-label">{{ ui.compare_score_summary }}</span>
       <div class="summary-table-scroll">
       <table class="summary-table">
         <thead>
           <tr>
             <th>#</th>
-            <th>Role</th>
-            <th>ATS Score</th>
-            <th>Status</th>
+            <th>{{ ui.compare_col_role }}</th>
+            <th>{{ ui.compare_col_score }}</th>
+            <th>{{ ui.compare_col_status }}</th>
             <th></th>
           </tr>
         </thead>
@@ -518,7 +518,7 @@
                 <span class="score-badge">{{ jd.metadata.score_low }}–{{ jd.metadata.score_high }} / 100</span>
                 <span class="best-star" aria-label="Best score">★</span>
               </td>
-              <td>Done</td>
+              <td>{{ ui.compare_done }}</td>
               <td>
                 <button class="help-btn"
                   hx-post="/compare/apply-start/"
@@ -526,21 +526,21 @@
                   hx-include="[name=csrfmiddlewaretoken]"
                   hx-target="#apply-modal-content"
                   hx-swap="innerHTML"
-                  hx-on::after-request="document.getElementById('apply-modal').showModal()">Help me apply</button>
+                  hx-on::after-request="document.getElementById('apply-modal').showModal()">{{ ui.compare_help_apply }}</button>
                 <button class="remove-btn"
                   hx-post="/compare/remove-jd/"
                   hx-vals='{"jd_id": "{{ jd.jd_id }}"}'
                   hx-include="[name=csrfmiddlewaretoken]"
                   hx-target="#summary-row-{{ jd.jd_id }}"
                   hx-swap="delete"
-                  hx-confirm="Remove this analysis?">Remove</button>
+                  hx-confirm="{{ ui.compare_remove_confirm }}">{{ ui.compare_remove }}</button>
                 {% if stale_resume %}
                 <form hx-post="/compare/reanalyze/{{ jd.jd_id }}/"
                       hx-target="#card-{{ jd.jd_id }}"
                       hx-swap="outerHTML"
                       hx-include="[name=csrfmiddlewaretoken]"
                       style="display:inline;margin:0">
-                  <button type="submit" class="reprocess-btn">Reprocess</button>
+                  <button type="submit" class="reprocess-btn">{{ ui.compare_reprocess }}</button>
                 </form>
                 {% endif %}
               </td>
@@ -550,7 +550,7 @@
               <td>{{ jd.jd_num }}</td>
               <td>—</td>
               <td>—</td>
-              <td>Done</td>
+              <td>{{ ui.compare_done }}</td>
               <td>
                 <button class="help-btn"
                   hx-post="/compare/apply-start/"
@@ -558,21 +558,21 @@
                   hx-include="[name=csrfmiddlewaretoken]"
                   hx-target="#apply-modal-content"
                   hx-swap="innerHTML"
-                  hx-on::after-request="document.getElementById('apply-modal').showModal()">Help me apply</button>
+                  hx-on::after-request="document.getElementById('apply-modal').showModal()">{{ ui.compare_help_apply }}</button>
                 <button class="remove-btn"
                   hx-post="/compare/remove-jd/"
                   hx-vals='{"jd_id": "{{ jd.jd_id }}"}'
                   hx-include="[name=csrfmiddlewaretoken]"
                   hx-target="#summary-row-{{ jd.jd_id }}"
                   hx-swap="delete"
-                  hx-confirm="Remove this analysis?">Remove</button>
+                  hx-confirm="{{ ui.compare_remove_confirm }}">{{ ui.compare_remove }}</button>
                 {% if stale_resume %}
                 <form hx-post="/compare/reanalyze/{{ jd.jd_id }}/"
                       hx-target="#card-{{ jd.jd_id }}"
                       hx-swap="outerHTML"
                       hx-include="[name=csrfmiddlewaretoken]"
                       style="display:inline;margin:0">
-                  <button type="submit" class="reprocess-btn">Reprocess</button>
+                  <button type="submit" class="reprocess-btn">{{ ui.compare_reprocess }}</button>
                 </form>
                 {% endif %}
               </td>
@@ -582,7 +582,7 @@
               <td>{{ jd.jd_num }}</td>
               <td>—</td>
               <td>—</td>
-              <td><span class="status-analyzing">Pending</span></td>
+              <td><span class="status-analyzing">{{ ui.compare_pending }}</span></td>
               <td></td>
             </tr>
             {% endif %}
@@ -594,7 +594,7 @@
 
     <!-- Add JD form -->
     <div class="add-jd-card">
-      <span class="card-label">Add a Job Description</span>
+      <span class="card-label">{{ ui.compare_add_jd_label }}</span>
       <form hx-post="/compare/add-jd/"
             hx-target="#summary-tbody"
             hx-swap="beforeend"
@@ -605,10 +605,10 @@
           name="jd_text"
           class="styled-textarea"
           rows="8"
-          placeholder="Paste a job description here…"></textarea>
+          placeholder="{{ ui.compare_jd_placeholder }}"></textarea>
         <div id="add-jd-error"></div>
         <div class="add-jd-row">
-          <button type="submit" class="action-btn">Analyze</button>
+          <button type="submit" class="action-btn">{{ ui.compare_analyze_btn }}</button>
         </div>
       </form>
     </div>
@@ -629,14 +629,14 @@
                 hx-encoding="multipart/form-data"
                 style="margin:0">
             {% csrf_token %}
-            <button type="submit" class="action-btn" style="font-size:0.7rem;padding:0.4rem 0.875rem;">Re-analyze</button>
+            <button type="submit" class="action-btn" style="font-size:0.7rem;padding:0.4rem 0.875rem;">{{ ui.compare_reanalyze }}</button>
           </form>
           {% endif %}
         </div>
         {% if jd.analysis_html %}
         <div class="analysis-result">{{ jd.analysis_html|safe }}</div>
         {% else %}
-        <div class="stream-status" style="padding:1rem 1.5rem;padding-bottom:1.25rem;">Not analyzed</div>
+        <div class="stream-status" style="padding:1rem 1.5rem;padding-bottom:1.25rem;">{{ ui.compare_not_analyzed }}</div>
         {% endif %}
       </div>
       {% endfor %}
@@ -645,7 +645,7 @@
     <div class="start-over">
       <form hx-post="/compare/reset/" hx-encoding="multipart/form-data" style="display:inline;margin:0">
         {% csrf_token %}
-        <button type="submit" class="start-over-btn">↩ Start over</button>
+        <button type="submit" class="start-over-btn">{{ ui.compare_start_over }}</button>
       </form>
     </div>
 

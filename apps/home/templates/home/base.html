@@ -149,6 +149,22 @@
     .app-shell[data-tab="results"] > .panel-col { display: none !important; }
   }
 
+  .lang-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 2px;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    padding: 0.2rem 0.45rem;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .lang-btn:hover { color: var(--cream); border-color: rgba(255,255,255,0.5); }
+  .lang-btn-active { color: var(--gold) !important; border-color: var(--gold) !important; }
+
   .credit-badge {
     font-size: 0.68rem;
     font-weight: 700;
@@ -378,13 +394,13 @@
   <a href="/" class="logo">CVora</a>
 
   <span class="mobile-tool-label">
-    {% if active_tool == 'analyzer' %}ATS Analyzer{% elif active_tool == 'coach' %}Resume Coach{% elif active_tool == 'compare' %}Compare JDs{% endif %}
+    {% if active_tool == 'analyzer' %}{{ ui.tool_label_analyzer }}{% elif active_tool == 'coach' %}{{ ui.tool_label_coach }}{% elif active_tool == 'compare' %}{{ ui.tool_label_compare }}{% endif %}
   </span>
 
   <nav class="site-nav">
-    <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
-    <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
-    <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
+    <a href="/analyzer/" class="nav-link {% if active_tool == 'analyzer' %}active{% endif %}">{{ ui.nav_ats_analyzer }}</a>
+    <a href="/coach/" class="nav-link {% if active_tool == 'coach' %}active{% endif %}">{{ ui.nav_resume_coach }}</a>
+    <a href="/compare/" class="nav-link {% if active_tool == 'compare' %}active{% endif %}">{{ ui.nav_compare_jds }}</a>
   </nav>
   <div class="user-section">
     {% if user.is_authenticated %}
@@ -392,12 +408,17 @@
       <a href="/accounts/" class="nav-link">{{ user.email }}</a>
       <form method="POST" action="/accounts/logout/" style="display:inline">
         {% csrf_token %}
-        <button type="submit" class="nav-link" style="padding:0.45rem 0.75rem;">Logout</button>
+        <button type="submit" class="nav-link" style="padding:0.45rem 0.75rem;">{{ ui.nav_logout }}</button>
       </form>
     {% else %}
-      <a href="/accounts/login/" class="nav-link">Login</a>
-      <a href="/accounts/register/" class="nav-link">Register</a>
+      <a href="/accounts/login/" class="nav-link">{{ ui.nav_login }}</a>
+      <a href="/accounts/register/" class="nav-link">{{ ui.nav_register }}</a>
     {% endif %}
+  </div>
+
+  <div style="display:flex; gap:0.25rem; align-items:center;">
+    <button class="lang-btn {% if lang == 'en' %}lang-btn-active{% endif %}" onclick="setLang('en')">EN</button>
+    <button class="lang-btn {% if lang == 'es' %}lang-btn-active{% endif %}" onclick="setLang('es')">ES</button>
   </div>
 
   <button class="hamburger-btn" id="hamburger-btn" aria-label="Open menu" aria-expanded="false">
@@ -409,9 +430,9 @@
   </button>
 
   <div id="mobile-menu" class="mobile-menu" aria-hidden="true">
-    <a href="/analyzer/" class="mobile-nav-link {% if active_tool == 'analyzer' %}active{% endif %}">ATS Analyzer</a>
-    <a href="/coach/" class="mobile-nav-link {% if active_tool == 'coach' %}active{% endif %}">Resume Coach</a>
-    <a href="/compare/" class="mobile-nav-link {% if active_tool == 'compare' %}active{% endif %}">Compare JDs</a>
+    <a href="/analyzer/" class="mobile-nav-link {% if active_tool == 'analyzer' %}active{% endif %}">{{ ui.nav_ats_analyzer }}</a>
+    <a href="/coach/" class="mobile-nav-link {% if active_tool == 'coach' %}active{% endif %}">{{ ui.nav_resume_coach }}</a>
+    <a href="/compare/" class="mobile-nav-link {% if active_tool == 'compare' %}active{% endif %}">{{ ui.nav_compare_jds }}</a>
     <hr class="mobile-divider">
     {% if user.is_authenticated %}
       <div class="mobile-user-row">
@@ -420,12 +441,17 @@
       </div>
       <form method="POST" action="/accounts/logout/">
         {% csrf_token %}
-        <button type="submit" class="mobile-nav-link">Logout</button>
+        <button type="submit" class="mobile-nav-link">{{ ui.nav_logout }}</button>
       </form>
     {% else %}
-      <a href="/accounts/login/" class="mobile-nav-link">Login</a>
-      <a href="/accounts/register/" class="mobile-nav-link">Register</a>
+      <a href="/accounts/login/" class="mobile-nav-link">{{ ui.nav_login }}</a>
+      <a href="/accounts/register/" class="mobile-nav-link">{{ ui.nav_register }}</a>
     {% endif %}
+    <hr class="mobile-divider">
+    <div style="display:flex; gap:0.5rem; padding:0.625rem 1.5rem;">
+      <button class="lang-btn {% if lang == 'en' %}lang-btn-active{% endif %}" onclick="setLang('en')">EN</button>
+      <button class="lang-btn {% if lang == 'es' %}lang-btn-active{% endif %}" onclick="setLang('es')">ES</button>
+    </div>
   </div>
 </header>
 <script>
@@ -475,14 +501,14 @@
 
 {% block page %}
 <div class="mobile-tabs" id="mobile-tabs">
-  <button class="mobile-tab active" data-tab="resume">Resume</button>
-  <button class="mobile-tab" data-tab="results">{% block tab_label %}Results{% endblock %}</button>
+  <button class="mobile-tab active" data-tab="resume">{{ ui.tab_resume }}</button>
+  <button class="mobile-tab" data-tab="results">{% block tab_label %}{{ ui.tab_results }}{% endblock %}</button>
 </div>
 <div class="app-shell" id="app-shell" data-tab="resume">
 
   <aside class="panel-col">
     <div class="panel-header">
-      <span class="panel-label">Your Resume</span>
+      <span class="panel-label">{{ ui.panel_your_resume }}</span>
     </div>
     <div class="panel-body" id="resume-panel">
       {% include "home/_panel.html" %}

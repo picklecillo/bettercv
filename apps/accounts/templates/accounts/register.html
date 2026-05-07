@@ -3,7 +3,7 @@
 {% block title_suffix %} — Create Account{% endblock %}
 
 {% block header_nav %}
-  <a href="/accounts/login/" class="nav-link">Login</a>
+  <a href="/accounts/login/" class="nav-link">{{ ui.accounts_login_link }}</a>
 {% endblock %}
 
 {% block extra_head %}
@@ -28,33 +28,33 @@
 {% block content %}
   <div class="auth-wrap">
     <div class="auth-card">
-      <h1 class="auth-title">Create account</h1>
-      <p class="auth-subtitle">Get started with 10 free credits <span class="free-badge">Free</span></p>
+      <h1 class="auth-title">{{ ui.accounts_create_title }}</h1>
+      <p class="auth-subtitle">{{ ui.accounts_get_started }} <span class="free-badge">Free</span></p>
       <form method="POST" action="/accounts/register/">
         {% csrf_token %}
         <div class="form-group">
-          <label class="form-label" for="id_email">Email</label>
+          <label class="form-label" for="id_email">{{ ui.accounts_email }}</label>
           <input class="form-input" type="email" name="email" id="id_email"
                  value="{{ form.email.value|default:'' }}"
                  placeholder="you@example.com" autocomplete="email">
           {% for e in form.email.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
         </div>
         <div class="form-group">
-          <label class="form-label" for="id_password1">Password</label>
+          <label class="form-label" for="id_password1">{{ ui.accounts_password }}</label>
           <input class="form-input" type="password" name="password1" id="id_password1"
-                 placeholder="Choose a password" autocomplete="new-password">
+                 placeholder="{{ ui.accounts_choose_password }}" autocomplete="new-password">
           {% for e in form.password1.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
         </div>
         <div class="form-group">
-          <label class="form-label" for="id_password2">Confirm password</label>
+          <label class="form-label" for="id_password2">{{ ui.accounts_confirm_password }}</label>
           <input class="form-input" type="password" name="password2" id="id_password2"
-                 placeholder="Repeat password" autocomplete="new-password">
+                 placeholder="{{ ui.accounts_repeat_password }}" autocomplete="new-password">
           {% for e in form.password2.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
         </div>
-        <button type="submit" class="submit-btn">Create account</button>
+        <button type="submit" class="submit-btn">{{ ui.accounts_create_btn }}</button>
       </form>
       <div class="auth-footer">
-        Already have an account? <a href="/accounts/login/">Sign in</a>
+        {{ ui.accounts_already_have }} <a href="/accounts/login/">{{ ui.accounts_sign_in_link }}</a>
       </div>
     </div>
   </div>

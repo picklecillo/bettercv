@@ -8,6 +8,7 @@ from django.utils.html import escape
 from django.views.decorators.http import require_POST, require_GET
 
 from apps.accounts.credits import CreditCost
+from apps.shared.i18n import get as ui
 from apps.shared.pdf import PdfExtractionError, extract_text_from_pdf
 from apps.shared import session as sess
 from apps.shared.decorators import htmx_login_required
@@ -194,12 +195,13 @@ def chat(request):
         "user_message": user_message,
     })
 
+    lang = request.session.get("lang", "en")
     sse_container = (
         f'<div id="sse-container-{nonce_key}"'
         f'     hx-ext="sse"'
         f'     sse-connect="/coach/stream/?key={nonce_key}"'
         f'     sse-close="done">'
-        f'  <div class="stream-status">Thinking<span class="dots">...</span></div>'
+        f'  <div class="stream-status">{ui(lang, "coach_thinking")}<span class="dots">...</span></div>'
         f'  <div id="stream-output-{nonce_key}"'
         f'       sse-swap="chunk"'
         f'       hx-swap="beforeend"></div>'
@@ -270,8 +272,9 @@ def stream(request):
         )
         yield SSEEvent("wrap", wrapped)
 
+    lang = request.session.get("lang", "en")
     return SseStream(
-        source=get_coach_service().stream_reply(experience, messages_to_send),
+        source=get_coach_service().stream_reply(experience, messages_to_send, lang=lang),
         finalizer=finalizer,
     ).response()
 

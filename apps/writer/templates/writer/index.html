@@ -54,13 +54,13 @@
 <div class="tool-scroll">
 
   <div class="writer-intro">
-    <h2>Resume Writer</h2>
-    <p>AI will convert your resume into a structured YAML format. You can review and edit the YAML, then generate a polished PDF.</p>
+    <h2>{{ ui.writer_title }}</h2>
+    <p>{{ ui.writer_subtitle }}</p>
   </div>
 
   {% if not shared_resume %}
   <div class="no-resume-notice">
-    Upload your resume in the left panel to get started.
+    {{ ui.no_resume_notice_short }}
   </div>
   {% endif %}
 
@@ -73,19 +73,19 @@
       {% csrf_token %}
 
       {% if shared_resume.resume_filename %}
-        <p class="loaded-from">Loaded from: {{ shared_resume.resume_filename }}</p>
+        <p class="loaded-from">{{ ui.writer_loaded_from }} {{ shared_resume.resume_filename }}</p>
       {% endif %}
 
       <div class="input-card" style="background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1.75rem; box-shadow:0 1px 3px rgba(26,26,46,0.06);">
-        <span class="card-label">Your Resume</span>
+        <span class="card-label">{{ ui.writer_your_resume }}</span>
         <textarea
           id="resume_text"
           name="resume_text"
           class="styled-textarea"
           rows="16"
-          placeholder="Paste the full text of your resume here…">{{ shared_resume.resume_text|default:'' }}</textarea>
+          placeholder="{{ ui.writer_paste_placeholder }}">{{ shared_resume.resume_text|default:'' }}</textarea>
 
-        <div class="divider-label">or upload PDF</div>
+        <div class="divider-label">{{ ui.writer_or_upload_pdf }}</div>
 
         <input
           id="resume_pdf"
@@ -97,7 +97,7 @@
 
       <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
         <button id="convert-btn" type="submit" class="action-btn">
-          Convert to YAML
+          {{ ui.writer_convert_btn }}
         </button>
       </div>
     </form>

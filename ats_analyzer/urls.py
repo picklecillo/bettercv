@@ -18,8 +18,11 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 
+from apps.shared.views import set_language
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('set-language/', set_language, name='set_language'),
     path('accounts/', include('apps.accounts.urls')),
     path('', include('apps.home.urls')),
     path('analyzer/', include('apps.analyzer.urls')),
